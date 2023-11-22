@@ -1,0 +1,41 @@
+import "oaidl.idl";
+import "ocidl.idl";
+
+#define xstr(a) str(a)
+#define str(a) #a
+
+#define make_version(a, b) a.b
+
+cpp_quote("const WORD VersionMajor_PyDispatchExLib = " xstr(MAJOR_VERSION) ";")
+cpp_quote("const WORD VersionMinor_PyDispatchExLib = " xstr(MINOR_VERSION) ";")
+
+[
+	object,
+	uuid(76d7b503-f2fa-4334-9b45-519e27e9caeb),
+	dual,
+	nonextensible,
+	pointer_default(unique)
+]
+interface IPyDispatchExObject : IDispatch
+{
+	[id(1), helpstring("TestMethod1 help string"), helpcontext(1)] HRESULT TestMethod1([in] VARIANT one, [in] VARIANT two, [in] VARIANT three, [in] VARIANT four, [in] VARIANT five, [out, retval] VARIANT* out_value);
+	[propget, id(2), helpstring("TestProperty1 help string"), helpcontext(2)] HRESULT TestProperty1([out, retval] VARIANT* pVal);
+	[propput, id(2), helpstring("TestProperty1 help string"), helpcontext(2)] HRESULT TestProperty1([in] VARIANT newVal);
+};
+[
+	uuid(fe3f3474-e93a-4f8b-b2ee-fb03359e6c04),
+	version(make_version(MAJOR_VERSION, MINOR_VERSION)),
+]
+library PyDispatchExLib
+{
+	importlib("stdole2.tlb");
+	[
+		uuid(bfdfa386-9555-4a4d-8d3e-5b48417b92a4)
+	]
+	coclass PyDispatchExObject
+	{
+		[default] interface IPyDispatchExObject;
+	};
+};
+
+import "shobjidl.idl";

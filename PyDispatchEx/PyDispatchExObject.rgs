@@ -1,0 +1,16 @@
+HKCR
+{
+	NoRemove CLSID
+	{
+		ForceRemove {bfdfa386-9555-4a4d-8d3e-5b48417b92a4} = s 'PyDispatchExObject class'
+		{
+			ForceRemove Programmable
+			InprocServer32 = s '%MODULE%'
+			{
+				val ThreadingModel = s 'Free'
+			}
+			TypeLib = s '{fe3f3474-e93a-4f8b-b2ee-fb03359e6c04}'
+			Version = s '1.0'
+		}
+	}
+}
