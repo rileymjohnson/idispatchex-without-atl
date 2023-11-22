@@ -4,6 +4,8 @@
 #include <sstream>
 #include <array>
 
+// ISupportErrorInfo
+
 STDMETHODIMP CPyDispatchExObject::InterfaceSupportsErrorInfo(REFIID riid)
 {
 	static const std::array interface_ids{
@@ -20,6 +22,8 @@ STDMETHODIMP CPyDispatchExObject::InterfaceSupportsErrorInfo(REFIID riid)
 
 	return S_FALSE;
 }
+
+// IDispatch
 
 STDMETHODIMP CPyDispatchExObject::GetTypeInfoCount(UINT* pctinfo)
 {
@@ -94,6 +98,50 @@ STDMETHODIMP CPyDispatchExObject::Invoke(DISPID dispidMember, const IID& riid, L
 
 	return type_info->Invoke(this, dispidMember, wFlags, pdispparams, pvarResult, pexcepinfo, puArgErr);
 }
+
+// IDispatchEx
+
+STDMETHODIMP CPyDispatchExObject::DeleteMemberByDispID(DISPID id)
+{
+	return E_NOTIMPL;
+}
+
+STDMETHODIMP CPyDispatchExObject::DeleteMemberByName(BSTR bstrName, DWORD grfdex)
+{
+	return E_NOTIMPL;
+}
+
+ STDMETHODIMP CPyDispatchExObject::GetDispID(BSTR bstrName, DWORD grfdex, DISPID* pid)
+ {
+	 return E_NOTIMPL;
+ }
+
+ STDMETHODIMP CPyDispatchExObject::GetMemberName(DISPID id, BSTR* pbstrName)
+ {
+	 return E_NOTIMPL;
+ }
+
+STDMETHODIMP CPyDispatchExObject::GetMemberProperties(DISPID id, DWORD grfdexFetch, DWORD* pgrfdex)
+{
+	return E_NOTIMPL;
+}
+
+STDMETHODIMP CPyDispatchExObject::GetNameSpaceParent(IUnknown** ppunk)
+{
+	return E_NOTIMPL;
+}
+
+STDMETHODIMP CPyDispatchExObject::GetNextDispID(DWORD grfdex, DISPID id, DISPID* pid)
+{
+	return E_NOTIMPL;
+}
+
+STDMETHODIMP CPyDispatchExObject::InvokeEx(DISPID id, LCID lcid, WORD wFlags, DISPPARAMS* pdp, VARIANT* pVarRes, EXCEPINFO* pei, IServiceProvider* pspCaller)
+{
+	return E_NOTIMPL;
+}
+
+// CPyDispatchExObject
 
 STDMETHODIMP CPyDispatchExObject::TestMethod1(VARIANT one, VARIANT two, VARIANT three, VARIANT four, VARIANT five, VARIANT* out_value)
 {

@@ -47,6 +47,16 @@ DECLARE_PROTECT_FINAL_CONSTRUCT()
 	STDMETHOD(GetIDsOfNames)(REFIID riid, LPOLESTR* rgszNames, UINT cNames, LCID lcid, DISPID* rgdispid);
 	STDMETHOD(Invoke)(DISPID dispidMember, REFIID riid, LCID lcid, WORD wFlags, DISPPARAMS* pdispparams, VARIANT* pvarResult, EXCEPINFO* pexcepinfo, UINT* puArgErr);
 
+	// IDispatchEx
+	STDMETHOD(DeleteMemberByDispID)(DISPID id);
+	STDMETHOD(DeleteMemberByName)(BSTR bstrName, DWORD grfdex);
+	STDMETHOD(GetDispID)(BSTR bstrName, DWORD grfdex, DISPID* pid);
+	STDMETHOD(GetMemberName)(DISPID id, BSTR* pbstrName);
+	STDMETHOD(GetMemberProperties)(DISPID id, DWORD grfdexFetch, DWORD* pgrfdex);
+	STDMETHOD(GetNameSpaceParent)(IUnknown** ppunk);
+	STDMETHOD(GetNextDispID)(DWORD grfdex, DISPID id, DISPID* pid);
+	STDMETHOD(InvokeEx)(DISPID id, LCID lcid, WORD wFlags, DISPPARAMS* pdp, VARIANT* pVarRes, EXCEPINFO* pei, IServiceProvider* pspCaller);
+
 	// CPyDispatchExObject
 	STDMETHOD(TestMethod1)(VARIANT one, VARIANT two, VARIANT three, VARIANT four, VARIANT five, VARIANT* out_value);
 	STDMETHOD(get_TestProperty1)(VARIANT* pVal);
