@@ -167,7 +167,7 @@ static const PyDispatchEx_MIDL_PROC_FORMAT_STRING PyDispatchEx__MIDL_ProcFormatS
 			0x33,		/* FC_AUTO_HANDLE */
 			0x6c,		/* Old Flags:  object, Oi2 */
 /*  2 */	NdrFcLong( 0x0 ),	/* 0 */
-/*  6 */	NdrFcShort( 0x7 ),	/* 7 */
+/*  6 */	NdrFcShort( 0xf ),	/* 15 */
 /*  8 */	NdrFcShort( 0x40 ),	/* X64 Stack size/offset = 64 */
 /* 10 */	NdrFcShort( 0x0 ),	/* 0 */
 /* 12 */	NdrFcShort( 0x8 ),	/* 8 */
@@ -228,7 +228,7 @@ static const PyDispatchEx_MIDL_PROC_FORMAT_STRING PyDispatchEx__MIDL_ProcFormatS
 /* 68 */	0x33,		/* FC_AUTO_HANDLE */
 			0x6c,		/* Old Flags:  object, Oi2 */
 /* 70 */	NdrFcLong( 0x0 ),	/* 0 */
-/* 74 */	NdrFcShort( 0x8 ),	/* 8 */
+/* 74 */	NdrFcShort( 0x10 ),	/* 16 */
 /* 76 */	NdrFcShort( 0x18 ),	/* X64 Stack size/offset = 24 */
 /* 78 */	NdrFcShort( 0x0 ),	/* 0 */
 /* 80 */	NdrFcShort( 0x8 ),	/* 8 */
@@ -259,7 +259,7 @@ static const PyDispatchEx_MIDL_PROC_FORMAT_STRING PyDispatchEx__MIDL_ProcFormatS
 /* 106 */	0x33,		/* FC_AUTO_HANDLE */
 			0x6c,		/* Old Flags:  object, Oi2 */
 /* 108 */	NdrFcLong( 0x0 ),	/* 0 */
-/* 112 */	NdrFcShort( 0x9 ),	/* 9 */
+/* 112 */	NdrFcShort( 0x11 ),	/* 17 */
 /* 114 */	NdrFcShort( 0x18 ),	/* X64 Stack size/offset = 24 */
 /* 116 */	NdrFcShort( 0x0 ),	/* 0 */
 /* 118 */	NdrFcShort( 0x8 ),	/* 8 */
@@ -1041,12 +1041,24 @@ static const USER_MARSHAL_ROUTINE_QUADRUPLE UserMarshalRoutines[ WIRE_MARSHAL_TA
    GUID={0x00020400,0x0000,0x0000,{0xC0,0x00,0x00,0x00,0x00,0x00,0x00,0x46}} */
 
 
+/* Object interface: IDispatchEx, ver. 0.0,
+   GUID={0xA6EF9860,0xC720,0x11d0,{0x93,0x37,0x00,0xA0,0xC9,0x0D,0xCA,0xA9}} */
+
+
 /* Object interface: IPyDispatchExObject, ver. 0.0,
    GUID={0x76d7b503,0xf2fa,0x4334,{0x9b,0x45,0x51,0x9e,0x27,0xe9,0xca,0xeb}} */
 
 #pragma code_seg(".orpc")
 static const unsigned short IPyDispatchExObject_FormatStringOffsetTable[] =
     {
+    (unsigned short) -1,
+    (unsigned short) -1,
+    (unsigned short) -1,
+    (unsigned short) -1,
+    (unsigned short) -1,
+    (unsigned short) -1,
+    (unsigned short) -1,
+    (unsigned short) -1,
     (unsigned short) -1,
     (unsigned short) -1,
     (unsigned short) -1,
@@ -4728,12 +4740,24 @@ static const USER_MARSHAL_ROUTINE_QUADRUPLE NDR64_UserMarshalRoutines[ WIRE_MARS
    GUID={0x00020400,0x0000,0x0000,{0xC0,0x00,0x00,0x00,0x00,0x00,0x00,0x46}} */
 
 
+/* Object interface: IDispatchEx, ver. 0.0,
+   GUID={0xA6EF9860,0xC720,0x11d0,{0x93,0x37,0x00,0xA0,0xC9,0x0D,0xCA,0xA9}} */
+
+
 /* Object interface: IPyDispatchExObject, ver. 0.0,
    GUID={0x76d7b503,0xf2fa,0x4334,{0x9b,0x45,0x51,0x9e,0x27,0xe9,0xca,0xeb}} */
 
 #pragma code_seg(".orpc")
 static const FormatInfoRef IPyDispatchExObject_Ndr64ProcTable[] =
     {
+    (FormatInfoRef)(LONG_PTR) -1,
+    (FormatInfoRef)(LONG_PTR) -1,
+    (FormatInfoRef)(LONG_PTR) -1,
+    (FormatInfoRef)(LONG_PTR) -1,
+    (FormatInfoRef)(LONG_PTR) -1,
+    (FormatInfoRef)(LONG_PTR) -1,
+    (FormatInfoRef)(LONG_PTR) -1,
+    (FormatInfoRef)(LONG_PTR) -1,
     (FormatInfoRef)(LONG_PTR) -1,
     (FormatInfoRef)(LONG_PTR) -1,
     (FormatInfoRef)(LONG_PTR) -1,
@@ -4791,7 +4815,7 @@ static const MIDL_SERVER_INFO IPyDispatchExObject_ServerInfo =
     2,
     (MIDL_SYNTAX_INFO*)IPyDispatchExObject_SyntaxInfo
     };
-CINTERFACE_PROXY_VTABLE(10) _IPyDispatchExObjectProxyVtbl = 
+CINTERFACE_PROXY_VTABLE(18) _IPyDispatchExObjectProxyVtbl = 
 {
     &IPyDispatchExObject_ProxyInfo,
     &IID_IPyDispatchExObject,
@@ -4802,6 +4826,14 @@ CINTERFACE_PROXY_VTABLE(10) _IPyDispatchExObjectProxyVtbl =
     0 /* IDispatch::GetTypeInfo */ ,
     0 /* IDispatch::GetIDsOfNames */ ,
     0 /* IDispatch_Invoke_Proxy */ ,
+    0 /* IDispatchEx::GetDispID */ ,
+    0 /* IDispatchEx_InvokeEx_Proxy */ ,
+    0 /* IDispatchEx::DeleteMemberByName */ ,
+    0 /* IDispatchEx::DeleteMemberByDispID */ ,
+    0 /* IDispatchEx::GetMemberProperties */ ,
+    0 /* IDispatchEx::GetMemberName */ ,
+    0 /* IDispatchEx::GetNextDispID */ ,
+    0 /* IDispatchEx::GetNameSpaceParent */ ,
     (void *) (INT_PTR) -1 /* IPyDispatchExObject::TestMethod1 */ ,
     (void *) (INT_PTR) -1 /* IPyDispatchExObject::get_TestProperty1 */ ,
     (void *) (INT_PTR) -1 /* IPyDispatchExObject::put_TestProperty1 */
@@ -4810,6 +4842,14 @@ CINTERFACE_PROXY_VTABLE(10) _IPyDispatchExObjectProxyVtbl =
 
 EXTERN_C DECLSPEC_SELECTANY const PRPC_STUB_FUNCTION IPyDispatchExObject_table[] =
 {
+    STUB_FORWARDING_FUNCTION,
+    STUB_FORWARDING_FUNCTION,
+    STUB_FORWARDING_FUNCTION,
+    STUB_FORWARDING_FUNCTION,
+    STUB_FORWARDING_FUNCTION,
+    STUB_FORWARDING_FUNCTION,
+    STUB_FORWARDING_FUNCTION,
+    STUB_FORWARDING_FUNCTION,
     STUB_FORWARDING_FUNCTION,
     STUB_FORWARDING_FUNCTION,
     STUB_FORWARDING_FUNCTION,
@@ -4823,7 +4863,7 @@ CInterfaceStubVtbl _IPyDispatchExObjectStubVtbl =
 {
     &IID_IPyDispatchExObject,
     &IPyDispatchExObject_ServerInfo,
-    10,
+    18,
     &IPyDispatchExObject_table[-3],
     CStdStubBuffer_DELEGATING_METHODS
 };
@@ -4878,7 +4918,7 @@ PCInterfaceName const _PyDispatchEx_InterfaceNamesList[] =
 
 const IID *  const _PyDispatchEx_BaseIIDList[] = 
 {
-    &IID_IDispatch,
+    &IID_IDispatchEx,
     0
 };
 

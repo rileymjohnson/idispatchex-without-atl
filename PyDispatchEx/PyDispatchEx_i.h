@@ -74,6 +74,7 @@ typedef struct PyDispatchExObject PyDispatchExObject;
 /* header files for imported files */
 #include "oaidl.h"
 #include "ocidl.h"
+#include "dispex.h"
 #include "shobjidl.h"
 
 #ifdef __cplusplus
@@ -103,7 +104,7 @@ EXTERN_C const IID IID_IPyDispatchExObject;
 #if defined(__cplusplus) && !defined(CINTERFACE)
     
     MIDL_INTERFACE("76d7b503-f2fa-4334-9b45-519e27e9caeb")
-    IPyDispatchExObject : public IDispatch
+    IPyDispatchExObject : public IDispatchEx
     {
     public:
         virtual /* [helpcontext][helpstring][id] */ HRESULT STDMETHODCALLTYPE TestMethod1( 
@@ -185,6 +186,67 @@ EXTERN_C const IID IID_IPyDispatchExObject;
             /* [annotation][out] */ 
             _Out_opt_  UINT *puArgErr);
         
+        DECLSPEC_XFGVIRT(IDispatchEx, GetDispID)
+        HRESULT ( STDMETHODCALLTYPE *GetDispID )( 
+            IPyDispatchExObject * This,
+            /* [in] */ BSTR bstrName,
+            /* [in] */ DWORD grfdex,
+            /* [out] */ DISPID *pid);
+        
+        DECLSPEC_XFGVIRT(IDispatchEx, InvokeEx)
+        /* [local] */ HRESULT ( STDMETHODCALLTYPE *InvokeEx )( 
+            IPyDispatchExObject * This,
+            /* [annotation][in] */ 
+            _In_  DISPID id,
+            /* [annotation][in] */ 
+            _In_  LCID lcid,
+            /* [annotation][in] */ 
+            _In_  WORD wFlags,
+            /* [annotation][in] */ 
+            _In_  DISPPARAMS *pdp,
+            /* [annotation][out] */ 
+            _Out_opt_  VARIANT *pvarRes,
+            /* [annotation][out] */ 
+            _Out_opt_  EXCEPINFO *pei,
+            /* [annotation][unique][in] */ 
+            _In_opt_  IServiceProvider *pspCaller);
+        
+        DECLSPEC_XFGVIRT(IDispatchEx, DeleteMemberByName)
+        HRESULT ( STDMETHODCALLTYPE *DeleteMemberByName )( 
+            IPyDispatchExObject * This,
+            /* [in] */ BSTR bstrName,
+            /* [in] */ DWORD grfdex);
+        
+        DECLSPEC_XFGVIRT(IDispatchEx, DeleteMemberByDispID)
+        HRESULT ( STDMETHODCALLTYPE *DeleteMemberByDispID )( 
+            IPyDispatchExObject * This,
+            /* [in] */ DISPID id);
+        
+        DECLSPEC_XFGVIRT(IDispatchEx, GetMemberProperties)
+        HRESULT ( STDMETHODCALLTYPE *GetMemberProperties )( 
+            IPyDispatchExObject * This,
+            /* [in] */ DISPID id,
+            /* [in] */ DWORD grfdexFetch,
+            /* [out] */ DWORD *pgrfdex);
+        
+        DECLSPEC_XFGVIRT(IDispatchEx, GetMemberName)
+        HRESULT ( STDMETHODCALLTYPE *GetMemberName )( 
+            IPyDispatchExObject * This,
+            /* [in] */ DISPID id,
+            /* [out] */ BSTR *pbstrName);
+        
+        DECLSPEC_XFGVIRT(IDispatchEx, GetNextDispID)
+        HRESULT ( STDMETHODCALLTYPE *GetNextDispID )( 
+            IPyDispatchExObject * This,
+            /* [in] */ DWORD grfdex,
+            /* [in] */ DISPID id,
+            /* [out] */ DISPID *pid);
+        
+        DECLSPEC_XFGVIRT(IDispatchEx, GetNameSpaceParent)
+        HRESULT ( STDMETHODCALLTYPE *GetNameSpaceParent )( 
+            IPyDispatchExObject * This,
+            /* [out] */ IUnknown **ppunk);
+        
         DECLSPEC_XFGVIRT(IPyDispatchExObject, TestMethod1)
         /* [helpcontext][helpstring][id] */ HRESULT ( STDMETHODCALLTYPE *TestMethod1 )( 
             IPyDispatchExObject * This,
@@ -239,6 +301,31 @@ EXTERN_C const IID IID_IPyDispatchExObject;
 
 #define IPyDispatchExObject_Invoke(This,dispIdMember,riid,lcid,wFlags,pDispParams,pVarResult,pExcepInfo,puArgErr)	\
     ( (This)->lpVtbl -> Invoke(This,dispIdMember,riid,lcid,wFlags,pDispParams,pVarResult,pExcepInfo,puArgErr) ) 
+
+
+#define IPyDispatchExObject_GetDispID(This,bstrName,grfdex,pid)	\
+    ( (This)->lpVtbl -> GetDispID(This,bstrName,grfdex,pid) ) 
+
+#define IPyDispatchExObject_InvokeEx(This,id,lcid,wFlags,pdp,pvarRes,pei,pspCaller)	\
+    ( (This)->lpVtbl -> InvokeEx(This,id,lcid,wFlags,pdp,pvarRes,pei,pspCaller) ) 
+
+#define IPyDispatchExObject_DeleteMemberByName(This,bstrName,grfdex)	\
+    ( (This)->lpVtbl -> DeleteMemberByName(This,bstrName,grfdex) ) 
+
+#define IPyDispatchExObject_DeleteMemberByDispID(This,id)	\
+    ( (This)->lpVtbl -> DeleteMemberByDispID(This,id) ) 
+
+#define IPyDispatchExObject_GetMemberProperties(This,id,grfdexFetch,pgrfdex)	\
+    ( (This)->lpVtbl -> GetMemberProperties(This,id,grfdexFetch,pgrfdex) ) 
+
+#define IPyDispatchExObject_GetMemberName(This,id,pbstrName)	\
+    ( (This)->lpVtbl -> GetMemberName(This,id,pbstrName) ) 
+
+#define IPyDispatchExObject_GetNextDispID(This,grfdex,id,pid)	\
+    ( (This)->lpVtbl -> GetNextDispID(This,grfdex,id,pid) ) 
+
+#define IPyDispatchExObject_GetNameSpaceParent(This,ppunk)	\
+    ( (This)->lpVtbl -> GetNameSpaceParent(This,ppunk) ) 
 
 
 #define IPyDispatchExObject_TestMethod1(This,one,two,three,four,five,out_value)	\

@@ -3,6 +3,12 @@
 
 namespace winrt::automation
 {
+	inline LPOLESTR bstr_to_lpolestr(BSTR bstr)
+	{
+		const std::wstring wide_string{bstr, ::SysStringLen(bstr)};
+
+		return const_cast<LPOLESTR>(wide_string.c_str());
+	}
 	inline std::string wstring_to_string(const std::wstring& wide_string)
 	{
 		const int buffer_size = WideCharToMultiByte(CP_UTF8, 0, wide_string.c_str(), -1, nullptr, 0, nullptr, nullptr);
@@ -18,7 +24,6 @@ namespace winrt::automation
 
 		return multi_byte_string;
 	}
-
 	inline std::wstring string_to_wstring(const std::string& string)
 	{
 		const int buffer_size = MultiByteToWideChar(CP_UTF8, 0, string.c_str(), -1, nullptr, 0);
@@ -69,15 +74,19 @@ namespace winrt::automation
 		{
 			return VT_UNKNOWN;
 		}
-		else if constexpr (std::is_same<T, VARIANT*>() || std::is_same<T, VARIANTARG*>())
+		else if constexpr (std::is_same<T, VARIANT>() || std::is_same<T, VARIANTARG>())
 		{
 			return VT_VARIANT;
+		}
+		else if constexpr (std::is_same<T, VARIANT*>() || std::is_same<T, VARIANTARG*>())
+		{
+			return VT_VARIANT | VT_BYREF;
 		}
 		else if constexpr (std::is_same<T, nullptr_t>())
 		{
 			return VT_NULL;
 		}
-		else if constexpr (std::is_same<T, SCODE>())
+		else if constexpr (std::is_same<T, SCODE>() || std::is_same<T, HRESULT>())
 		{
 			return VT_ERROR;
 		}

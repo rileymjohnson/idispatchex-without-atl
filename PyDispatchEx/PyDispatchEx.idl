@@ -1,6 +1,8 @@
 import "oaidl.idl";
 import "ocidl.idl";
 
+import "dispex.idl";
+
 #define xstr(a) str(a)
 #define str(a) #a
 
@@ -16,7 +18,7 @@ cpp_quote("const WORD VersionMinor_PyDispatchExLib = " xstr(MINOR_VERSION) ";")
 	nonextensible,
 	pointer_default(unique)
 ]
-interface IPyDispatchExObject : IDispatch
+interface IPyDispatchExObject : IDispatchEx
 {
 	[id(1), helpstring("TestMethod1 help string"), helpcontext(1)] HRESULT TestMethod1([in] VARIANT one, [in] VARIANT two, [in] VARIANT three, [in] VARIANT four, [in] VARIANT five, [out, retval] VARIANT* out_value);
 	[propget, id(2), helpstring("TestProperty1 help string"), helpcontext(2)] HRESULT TestProperty1([out, retval] VARIANT* pVal);

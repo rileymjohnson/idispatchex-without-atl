@@ -3,6 +3,14 @@
 
 #include <sstream>
 #include <array>
+#include <string>
+
+inline LPOLESTR bstr_to_lpolestr(BSTR bstr)
+{
+	const std::wstring wide_string{bstr, ::SysStringLen(bstr)};
+
+	return const_cast<LPOLESTR>(wide_string.c_str());
+}
 
 // ISupportErrorInfo
 
@@ -44,9 +52,7 @@ STDMETHODIMP CPyDispatchExObject::GetTypeInfo(UINT itinfo, LCID lcid, ITypeInfo*
 		return DISP_E_BADINDEX;
 	}
 
-	const auto iter = std::ranges::find(type_info_lcids_, lcid);
-
-	if (iter != type_info_lcids_.end())
+	if (const auto iter = std::ranges::find(type_info_lcids_, lcid); iter != type_info_lcids_.end())
 	{
 		const auto index = std::distance(type_info_lcids_.begin(), iter);
 
@@ -54,16 +60,18 @@ STDMETHODIMP CPyDispatchExObject::GetTypeInfo(UINT itinfo, LCID lcid, ITypeInfo*
 	}
 
 	winrt::com_ptr<ITypeLib> type_lib;
-
-	winrt::hresult hr = LoadRegTypeLib(LIBID_PyDispatchExLib, VersionMajor_PyDispatchExLib, VersionMinor_PyDispatchExLib, lcid, type_lib.put());
-
-	if (FAILED(hr))
-	{
-		return hr;
-	}
+	winrt::hresult hr = LoadRegTypeLib(
+		LIBID_PyDispatchExLib,
+		VersionMajor_PyDispatchExLib,
+		VersionMinor_PyDispatchExLib,
+		lcid,
+		type_lib.put()
+	);
+	if (FAILED(hr)) return hr;
 
 	winrt::com_ptr<ITypeInfo> type_info;
 	hr = type_lib->GetTypeInfoOfGuid(IID_IPyDispatchExObject, type_info.put());
+	if (FAILED(hr)) return hr;
 
 	type_info.copy_to(pptinfo);
 
@@ -77,11 +85,7 @@ STDMETHODIMP CPyDispatchExObject::GetIDsOfNames(const IID& riid, LPOLESTR* rgszN
 {
 	winrt::com_ptr<ITypeInfo> type_info;
 	const winrt::hresult hr = GetTypeInfo(0, lcid, type_info.put());
-
-	if (FAILED(hr))
-	{
-		return hr;
-	}
+	if (FAILED(hr)) return hr;
 
 	return type_info->GetIDsOfNames(rgszNames, cNames, rgdispid);
 }
@@ -90,11 +94,7 @@ STDMETHODIMP CPyDispatchExObject::Invoke(DISPID dispidMember, const IID& riid, L
 {
 	winrt::com_ptr<ITypeInfo> type_info;
 	const winrt::hresult hr = GetTypeInfo(0, lcid, type_info.put());
-
-	if (FAILED(hr))
-	{
-		return hr;
-	}
+	if (FAILED(hr)) return hr;
 
 	return type_info->Invoke(this, dispidMember, wFlags, pdispparams, pvarResult, pexcepinfo, puArgErr);
 }
@@ -103,22 +103,137 @@ STDMETHODIMP CPyDispatchExObject::Invoke(DISPID dispidMember, const IID& riid, L
 
 STDMETHODIMP CPyDispatchExObject::DeleteMemberByDispID(DISPID id)
 {
-	return E_NOTIMPL;
+	if (std::ranges::find(idispatch_dispids, id) != idispatch_dispids.end())
+	{
+		return S_FALSE;
+	}
+
+	const auto member = std::ranges::find_if(dynamic_members, [id](const member_entry& member)
+	{
+		return member.dispid == id;
+	});
+
+	if (member != dynamic_members.end())
+	{
+		member->is_deleted = true;
+	}
+
+	return S_OK;
 }
 
 STDMETHODIMP CPyDispatchExObject::DeleteMemberByName(BSTR bstrName, DWORD grfdex)
 {
-	return E_NOTIMPL;
+	LPOLESTR olestr_name = bstr_to_lpolestr(bstrName);
+	DISPID dispid;
+
+	const winrt::hresult hr = GetIDsOfNames(IID_NULL, &olestr_name, 1, LOCALE_USER_DEFAULT, &dispid);
+	// Member is part of IDispatch and can't be deleted
+	if (SUCCEEDED(hr)) return S_FALSE;
+
+	const auto member = std::ranges::find_if(dynamic_members, [bstrName, grfdex](const member_entry& member)
+	{
+		if (grfdex & fdexNameCaseSensitive)
+		{
+			return VarBstrCmp(bstrName, member.name.get(), LOCALE_USER_DEFAULT, NULL) == VARCMP_EQ;
+		}
+
+		return VarBstrCmp(bstrName, member.name.get(), LOCALE_USER_DEFAULT, NORM_IGNORECASE) == VARCMP_EQ;
+	});
+
+	if (member != dynamic_members.end())
+	{
+		member->is_deleted = true;
+	}
+
+	return S_OK;
 }
 
  STDMETHODIMP CPyDispatchExObject::GetDispID(BSTR bstrName, DWORD grfdex, DISPID* pid)
  {
-	 return E_NOTIMPL;
+	 LPOLESTR olestr_name = bstr_to_lpolestr(bstrName);
+
+	 const winrt::hresult hr = GetIDsOfNames(IID_NULL, &olestr_name, 1, LOCALE_USER_DEFAULT, pid);
+	 if (SUCCEEDED(hr)) return hr;
+
+	 const auto member = std::ranges::find_if(dynamic_members, [bstrName, grfdex](const member_entry& member)
+		 {
+			 if (grfdex & fdexNameCaseSensitive)
+			 {
+				 return VarBstrCmp(bstrName, member.name.get(), LOCALE_USER_DEFAULT, NULL) == VARCMP_EQ;
+			 }
+
+			 return VarBstrCmp(bstrName, member.name.get(), LOCALE_USER_DEFAULT, NORM_IGNORECASE) == VARCMP_EQ;
+		 });
+
+	 if (member != dynamic_members.end())
+	 {
+		 *pid = member->dispid;
+
+		 return S_OK;
+	 }
+
+	 if (grfdex & fdexNameImplicit)
+	 {
+		 return DISP_E_UNKNOWNNAME;
+	 }
+
+	 if (grfdex & fdexNameEnsure)
+	 {
+		 DISPID max_dispid;
+		 if (dynamic_members.empty())
+		 {
+			 max_dispid = STARTING_DYNAMIC_DISPID;
+		 } else
+		 {
+			 max_dispid = std::ranges::max_element(dynamic_members, [](const member_entry& a, const member_entry& b)
+			 {
+				 return a.dispid < b.dispid;
+			 })->dispid;
+		 }
+
+		 member_entry new_member = {
+			 wil::unique_bstr{bstrName},
+			 max_dispid + 1,
+			 wil::unique_variant{},
+			 false,
+			 0
+		 };
+
+		 new_member.value.vt = VT_EMPTY;
+
+		 dynamic_members.push_back(std::move(new_member));
+		 *pid = new_member.dispid;
+	 }
+
+	 return S_OK;
  }
 
  STDMETHODIMP CPyDispatchExObject::GetMemberName(DISPID id, BSTR* pbstrName)
  {
-	 return E_NOTIMPL;
+	 const auto iter = std::ranges::find(idispatch_dispids, id);
+
+	 if (iter != idispatch_dispids.end())
+	 {
+		 const auto index = std::distance(idispatch_dispids.begin(), iter);
+
+		 *pbstrName = idispatch_names.at(index).get();
+
+		 return S_OK;
+	 }
+
+	 const auto member = std::ranges::find_if(dynamic_members, [id](const member_entry& member)
+		 {
+			 return member.dispid == id;
+		 });
+
+	 if (member != dynamic_members.end())
+	 {
+		 *pbstrName = member->name.get();
+
+		 return S_OK;
+	 }
+
+	 return DISP_E_UNKNOWNNAME;
  }
 
 STDMETHODIMP CPyDispatchExObject::GetMemberProperties(DISPID id, DWORD grfdexFetch, DWORD* pgrfdex)
@@ -128,12 +243,68 @@ STDMETHODIMP CPyDispatchExObject::GetMemberProperties(DISPID id, DWORD grfdexFet
 
 STDMETHODIMP CPyDispatchExObject::GetNameSpaceParent(IUnknown** ppunk)
 {
-	return E_NOTIMPL;
+	*ppunk = nullptr;
+
+	return S_OK;
 }
 
 STDMETHODIMP CPyDispatchExObject::GetNextDispID(DWORD grfdex, DISPID id, DISPID* pid)
 {
-	return E_NOTIMPL;
+	if (id == DISPID_STARTENUM)
+	{
+		*pid = idispatch_dispids.at(0);
+
+		return S_OK;
+	}
+
+	if (grfdex & fdexEnumDefault)
+	{
+		if (id == idispatch_dispids.back())
+		{
+			return S_FALSE;
+		}
+
+		for (int i = 0; i < idispatch_dispids.size(); ++i)
+		{
+			if (idispatch_dispids.at(i) == id)
+			{
+				*pid = idispatch_dispids.at(i + 1);
+			}
+		}
+
+		return S_OK;
+	}
+
+	for (int i = 0; i < idispatch_dispids.size(); ++i)
+	{
+		if (idispatch_dispids.at(i) == id)
+		{
+			if (idispatch_dispids.at(i) != idispatch_dispids.back())
+			{
+				*pid = idispatch_dispids.at(i + 1);
+
+				return S_OK;
+			}
+
+			break;
+		}
+	}
+
+	if (dynamic_members.empty() || id == dynamic_members.back().dispid)
+	{
+		return S_FALSE;
+	}
+
+	for (int i = 0; i < dynamic_members.size(); ++i)
+	{
+		if (dynamic_members.at(i).dispid == id)
+		{
+			*pid = dynamic_members.at(i + 1).dispid;
+			break;
+		}
+	}
+
+	return S_OK;
 }
 
 STDMETHODIMP CPyDispatchExObject::InvokeEx(DISPID id, LCID lcid, WORD wFlags, DISPPARAMS* pdp, VARIANT* pVarRes, EXCEPINFO* pei, IServiceProvider* pspCaller)

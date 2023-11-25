@@ -1,5 +1,7 @@
 ﻿#include "pch.h"
 
+#include <DispEx.h>
+
 #include <iostream>
 #include <sstream>
 
@@ -12,7 +14,7 @@ public:
 	{
 		winrt::init_apartment(winrt::apartment_type::multi_threaded);
 
-		dispatch_ = winrt::create_instance<IDispatch>(class_id_);
+		dispatch_ = winrt::create_instance<IDispatchEx>(class_id_);
 
 		winrt::hresult hr = dispatch_->GetTypeInfo(0, locale_, type_info_.put());
 		winrt::check_hresult(hr);
@@ -24,7 +26,7 @@ public:
 		interface_name_ = std::wstring{ interface_name.get(), WINRT_IMPL_SysStringLen(interface_name.get()) };
 	}
 	[[nodiscard]] wil::unique_variant call_method(
-		winrt::hstring method_name,
+		const winrt::hstring& method_name,
 		const std::vector<wil::unique_variant>& arguments,
 		const std::unordered_map<winrt::hstring, wil::unique_variant>& named_arguments
 	) const
@@ -35,7 +37,7 @@ public:
 		std::vector<winrt::hstring> named_argument_names{};
 		named_argument_names.reserve(named_arguments.size());
 
-		std::copy(arguments.begin(), arguments.end(), total_arguments.begin());
+		std::ranges::copy(arguments, total_arguments.begin());
 
 		for (const auto& [name, value] : named_arguments)
 		{
@@ -57,7 +59,7 @@ public:
 		winrt::hresult hr = dispatch_->GetIDsOfNames(IID_NULL, names.data(), static_cast<unsigned int>(names.size()), locale_, dispids.data());
 		winrt::check_hresult(hr);
 
-		std::reverse(total_arguments.begin(), total_arguments.end());
+		std::ranges::reverse(total_arguments);
 		std::reverse(dispids.begin() + 1, dispids.end());
 
 		DISPPARAMS dispatch_params{
@@ -71,77 +73,67 @@ public:
 
 		EXCEPINFO excep_info;
 
-		excep_info.bstrDescription = nullptr;
-		excep_info.wCode = -1;
-
 		UINT argument_error_index;
 
 		hr = dispatch_->Invoke(dispids.at(0), IID_NULL, locale_, DISPATCH_METHOD, &dispatch_params, result.addressof(), &excep_info, &argument_error_index);
 
-		if (SUCCEEDED(hr))
-		{
-			std::cout << "success\n";
-		} else
-		{
-			std::cout << "failure\n";
-
-			wil::unique_bstr name;
-			DWORD help_context;
-			wil::unique_bstr help_file;
-			hr = type_info_->GetDocumentation(dispids.at(0), name.put(), nullptr, &help_context, help_file.put());
-			winrt::check_hresult(hr);
-
-			std::wstringstream full_name;
-			full_name << interface_name_ << "::" << name.get();
-
-			wil::unique_bstr full_name_bstr = wil::unique_bstr(WINRT_IMPL_SysAllocString(full_name.str().c_str()));
-
-			auto com_error = _com_error(hr);
-
-			if (excep_info.wCode == -1)
-			{
-				excep_info.wCode = com_error.WCode();
-			}
-
-			excep_info.wReserved = 0;
-			excep_info.bstrSource = full_name_bstr.get();
-
-			if (excep_info.bstrDescription == nullptr)
-			{
-				excep_info.bstrDescription = com_error.Description();
-			}
-
-			excep_info.bstrHelpFile = help_file.get();
-			excep_info.dwHelpContext = help_context;
-			excep_info.pvReserved = nullptr;
-			excep_info.pfnDeferredFillIn = nullptr;
-			excep_info.scode = 0;
-		}
-
 		return result;
 	}
-	winrt::com_ptr<IDispatch> get()
+	void set_property(
+		const winrt::hstring& property_name,
+		wil::unique_variant value
+	) const
+	{
+		auto property_name_ole_str = const_cast<wchar_t*>(property_name.c_str());
+		DISPID dispid;
+		winrt::hresult hr = dispatch_->GetIDsOfNames(IID_NULL, &property_name_ole_str, 1, locale_, &dispid);
+		winrt::check_hresult(hr);
+
+		DISPID dispid_property_put = DISPID_PROPERTYPUT;
+
+		DISPPARAMS dispatch_params{ value.addressof(), &dispid_property_put, 1, 1 };
+
+		EXCEPINFO excep_info;
+
+		UINT argument_error_index;
+
+		hr = dispatch_->Invoke(dispid, IID_NULL, locale_, DISPATCH_PROPERTYPUT, &dispatch_params, nullptr, &excep_info, &argument_error_index);
+		winrt::check_hresult(hr);
+	}
+	wil::unique_variant get_property(const winrt::hstring& property_name) const
+	{
+		wil::unique_variant value;
+
+		auto property_name_ole_str = const_cast<wchar_t*>(property_name.c_str());
+		DISPID dispid;
+		winrt::hresult hr = dispatch_->GetIDsOfNames(IID_NULL, &property_name_ole_str, 1, locale_, &dispid);
+		winrt::check_hresult(hr);
+
+		DISPPARAMS dispatch_params{ nullptr, nullptr, 0, 0 };
+
+		EXCEPINFO excep_info;
+
+		UINT argument_error_index;
+
+		hr = dispatch_->Invoke(dispid, IID_NULL, locale_, DISPATCH_PROPERTYGET, &dispatch_params, value.addressof(), &excep_info, &argument_error_index);
+		winrt::check_hresult(hr);
+
+		return value;
+	}
+	winrt::com_ptr<IDispatchEx> get_interface()
 	{
 		return dispatch_;
 	}
 private:
-	winrt::com_ptr<IDispatch> dispatch_;
+	winrt::com_ptr<IDispatchEx> dispatch_;
 	winrt::com_ptr<ITypeInfo> type_info_;
 	std::wstring interface_name_;
 	winrt::guid class_id_;
 	LCID locale_;
 };
 
-int main()
+void test_call_method(const IDispatchExHolder& dispatch)
 {
-	constexpr winrt::guid class_id{"{bfdfa386-9555-4a4d-8d3e-5b48417b92a4}"};
-
-	IDispatchExHolder dispatch(class_id);
-
-	auto dispatch_ = dispatch.get();
-
-	winrt::hstring method_name{L"TestMethod1"};
-
 	std::vector<wil::unique_variant> arguments{};
 	arguments.push_back(std::move(winrt::automation::make_variant(1)));
 
@@ -151,20 +143,43 @@ int main()
 	named_arguments[L"four"] = winrt::automation::make_variant(4);
 	named_arguments[L"three"] = winrt::automation::make_variant(3);
 
-	auto result = dispatch.call_method(method_name, arguments, named_arguments);
+	auto result = dispatch.call_method(L"TestMethod1", arguments, named_arguments);
 
-	std::cout << result.vt << "\n";
-	std::wcout << result.bstrVal << "\n";
+	std::wcout << "[test_call_method]\n";
+	std::wcout << "vt: " << result.vt << "\n";
+	std::wcout << "bstr: " << result.bstrVal << "\n";
+	std::wcout << "--------------\n";
+}
 
-	winrt::com_ptr<ITypeInfo> type_info;
-	winrt::hresult hr = dispatch.get()->GetTypeInfo(0, LOCALE_USER_DEFAULT, type_info.put());
-	winrt::check_hresult(hr);
+void test_set_property(const IDispatchExHolder& dispatch)
+{
+	wil::unique_variant value;
+	value.vt = VT_BSTR;
+	value.bstrVal = ::SysAllocString(L"YAY");
+	dispatch.set_property(L"TestProperty1", std::move(value));
 
-	wil::unique_bstr type_name_bstr;
-	hr = type_info->GetDocumentation(MEMBERID_NIL, type_name_bstr.put(), nullptr, nullptr, nullptr);
+	std::wcout << "[test_set_property]\n";
+	std::wcout << "--------------\n";
+}
 
-	std::wstring type_name{ type_name_bstr.get(), ::SysStringLen(type_name_bstr.get()) };
-	std::wcout << type_name << "\n";
+void test_get_property(const IDispatchExHolder& dispatch)
+{
+	const wil::unique_variant result = dispatch.get_property(L"TestProperty1");
+	std::wcout << "[test_get_property]\n";
+	std::wcout << "vt: " << result.vt << "\n";
+	std::wcout << "result: " << result.bstrVal << "\n";
+	std::wcout << "--------------\n";
+}
+
+int main()
+{
+	constexpr winrt::guid class_id{"{bfdfa386-9555-4a4d-8d3e-5b48417b92a4}"};
+
+	const IDispatchExHolder dispatch(class_id);
+
+	test_call_method(dispatch);
+	test_set_property(dispatch);
+	test_get_property(dispatch);
 
 	return 0;
 }
