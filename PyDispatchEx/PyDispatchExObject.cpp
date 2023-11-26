@@ -238,7 +238,20 @@ STDMETHODIMP CPyDispatchExObject::DeleteMemberByName(BSTR bstrName, DWORD grfdex
 
 STDMETHODIMP CPyDispatchExObject::GetMemberProperties(DISPID id, DWORD grfdexFetch, DWORD* pgrfdex)
 {
-	return E_NOTIMPL;
+	if (
+		std::ranges::find(idispatch_dispids, id) == idispatch_dispids.end() ||
+		std::ranges::find_if(dynamic_members, [id](const member_entry& member)
+			{
+				return member.dispid == id;
+			}) == dynamic_members.end()
+	)
+	{
+		return DISP_E_UNKNOWNNAME;
+	}
+
+	*pgrfdex = fdexPropCanGet | fdexPropCanPut;
+
+	return S_OK;
 }
 
 STDMETHODIMP CPyDispatchExObject::GetNameSpaceParent(IUnknown** ppunk)
@@ -309,7 +322,28 @@ STDMETHODIMP CPyDispatchExObject::GetNextDispID(DWORD grfdex, DISPID id, DISPID*
 
 STDMETHODIMP CPyDispatchExObject::InvokeEx(DISPID id, LCID lcid, WORD wFlags, DISPPARAMS* pdp, VARIANT* pVarRes, EXCEPINFO* pei, IServiceProvider* pspCaller)
 {
-	return E_NOTIMPL;
+	if (std::ranges::find(idispatch_dispids, id) != idispatch_dispids.end())
+	{
+		return Invoke(id, IID_NULL, lcid, wFlags, pdp, pVarRes, pei, nullptr);
+	}
+
+	const auto member = std::ranges::find_if(dynamic_members, [id](const member_entry& member)
+		{
+			return member.dispid == id;
+		});
+
+	if (member != dynamic_members.end())
+	{
+		if (wFlags & DISPATCH_PROPERTYGET)
+		{
+			*pVarRes = member->value;
+		} else if (wFlags & DISPATCH_PROPERTYPUT)
+		{
+			member->value = wil::unique_variant{pdp->rgvarg[0]};
+		}
+	}
+
+	return DISP_E_MEMBERNOTFOUND;
 }
 
 // CPyDispatchExObject
