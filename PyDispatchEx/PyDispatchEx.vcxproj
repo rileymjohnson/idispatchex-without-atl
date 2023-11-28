@@ -222,8 +222,13 @@
     <ClInclude Include="pch.h" />
     <ClInclude Include="PyDispatchExObject.h" />
     <ClInclude Include="PyDispatchEx_i.h" />
+    <ClInclude Include="registry_key.h" />
+    <ClInclude Include="registry_object.h" />
+    <ClInclude Include="registry_parser.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="targetver.h" />
+    <ClInclude Include="utils.h" />
+    <ClInclude Include="winrt_module.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
@@ -262,6 +267,9 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
       </PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="registry_key.cpp" />
+    <ClCompile Include="registry_object.cpp" />
+    <ClCompile Include="registry_parser.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="PyDispatchEx.rc" />

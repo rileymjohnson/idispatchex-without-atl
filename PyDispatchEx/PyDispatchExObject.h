@@ -1,11 +1,15 @@
 #pragma once
 
 #include <DispEx.h>
+#include <iostream>
+#include <regex>
 
 #include <vector>
-#include <unordered_map>
 #include <variant>
-#include <functional>
+
+#include "winrt_module.h"
+#include "registry_object.h"
+#include "utils.h"
 
 #include "PyDispatchEx_i.h"
 
@@ -40,18 +44,101 @@ class ATL_NO_VTABLE CPyDispatchExObject :
 public:
 	CPyDispatchExObject() = default;
 
-	DECLARE_REGISTRY_RESOURCEID(IDR_PYDISPATCHEXOBJECT)
+	static HRESULT STDMETHODCALLTYPE UpdateRegistry(BOOL bRegister) throw()
+	{
+		RegObject ro;
+		HRESULT hr = ro.FinalConstruct();
+		if (FAILED(hr))
+		{
+			return hr;
+		}
 
-	DECLARE_NOT_AGGREGATABLE(CPyDispatchExObject)
+		hr = ATL::_pAtlModule->AddCommonRGSReplacements(&ro);
+		if (FAILED(hr))
+			return hr;
 
-	BEGIN_COM_MAP(CPyDispatchExObject)
-		COM_INTERFACE_ENTRY(IPyDispatchExObject)
-		COM_INTERFACE_ENTRY(IDispatch)
-		COM_INTERFACE_ENTRY(IDispatchEx)
-		COM_INTERFACE_ENTRY(ISupportErrorInfo)
-	END_COM_MAP()
+		const wchar_t* module_name = wil::GetModuleFileNameW(wil::GetModuleInstanceHandle()).get();
+		const wchar_t* module_name_unquoted2 = escape_single_quote(module_name).c_str();
 
-	DECLARE_PROTECT_FINAL_CONSTRUCT()
+		OLECHAR module_name_unquoted[_MAX_PATH * 2];
+		ATL::CAtlModule::EscapeSingleQuote(module_name_unquoted, _countof(module_name_unquoted), module_name);
+
+		winrt::hresult hRes = ro.AddReplacement(L"Module", module_name_unquoted);
+
+		if (FAILED(hRes))
+			return hRes;
+
+		hRes = ro.AddReplacement(L"Module_Raw", module_name_unquoted);
+		if (FAILED(hRes))
+			return hRes;
+
+		if (bRegister)
+		{
+			return ro.ResourceRegister(module_name, IDR_PYDISPATCHEXOBJECT, L"REGISTRY");
+		}
+
+		return ro.ResourceUnregister(module_name, IDR_PYDISPATCHEXOBJECT, L"REGISTRY");
+	}
+
+	typedef ATL::CComCreator2< ATL::CComCreator< ATL::CComObject< CPyDispatchExObject > >, ATL::CComFailCreator<CLASS_E_NOAGGREGATION> > _CreatorClass;
+
+	typedef CPyDispatchExObject _ComMapClass;
+	static HRESULT WINAPI _Cache(_In_ void* pv, _In_ REFIID iid, _COM_Outptr_result_maybenull_ void** ppvObject, _In_ DWORD_PTR dw) throw()
+	{
+		_ComMapClass* p = (_ComMapClass*)pv;
+		p->Lock();
+		HRESULT hRes = E_FAIL;
+		__try
+		{
+			hRes = ATL::CComObjectRootBase::_Cache(pv, iid, ppvObject, dw);
+		}
+		__finally
+		{
+			p->Unlock();
+		}
+
+		return hRes;
+	}
+	IUnknown* _GetRawUnknown() throw()
+	{
+		ATLASSERT(_GetEntries()[0].pFunc == _ATL_SIMPLEMAPENTRY);
+		return (IUnknown*)((INT_PTR)this+_GetEntries()->dw);
+	}
+	IUnknown* GetUnknown() throw()
+	{
+		return _GetRawUnknown();
+	}
+	HRESULT _InternalQueryInterface( _In_ REFIID iid, _COM_Outptr_ void** ppvObject) throw()
+	{
+		return this->InternalQueryInterface(this, _GetEntries(), iid, ppvObject);
+	}
+	const static ATL::_ATL_INTMAP_ENTRY* WINAPI _GetEntries() throw() {
+		static const ATL::_ATL_INTMAP_ENTRY _entries[] = {
+			{NULL, (DWORD_PTR)_T("CPyDispatchExObject"), (ATL::_ATL_CREATORARGFUNC*)0},
+			{&_ATL_IIDOF(IPyDispatchExObject), offsetofclass(IPyDispatchExObject, _ComMapClass), _ATL_SIMPLEMAPENTRY},
+			{&_ATL_IIDOF(IDispatch), offsetofclass(IDispatch, _ComMapClass), _ATL_SIMPLEMAPENTRY},
+			{&_ATL_IIDOF(IDispatchEx), offsetofclass(IDispatchEx, _ComMapClass), _ATL_SIMPLEMAPENTRY},
+			{&_ATL_IIDOF(ISupportErrorInfo), offsetofclass(ISupportErrorInfo, _ComMapClass), _ATL_SIMPLEMAPENTRY},
+			__if_exists(_GetAttrEntries) {{NULL, (DWORD_PTR)_GetAttrEntries, _ChainAttr }, }
+			{NULL, 0, 0}
+		};
+
+		return &_entries[1];
+	}
+
+	virtual ULONG STDMETHODCALLTYPE AddRef(void) throw() = 0;
+	virtual ULONG STDMETHODCALLTYPE Release(void) throw() = 0;
+	STDMETHOD(QueryInterface)( REFIID, _COM_Outptr_ void**) throw() = 0;
+
+	void InternalFinalConstructAddRef()
+	{
+		InternalAddRef();
+	}
+
+	void InternalFinalConstructRelease()
+	{
+		InternalRelease();
+	}
 
 	// ReSharper disable once CppHidingFunction
 	HRESULT FinalConstruct()
@@ -114,4 +201,18 @@ public:
 	STDMETHOD(put_TestProperty1)(VARIANT newVal) override;
 };
 
-OBJECT_ENTRY_AUTO(__uuidof(PyDispatchExObject), CPyDispatchExObject)
+__declspec(selectany) ATL::_ATL_OBJMAP_CACHE __objCache__CPyDispatchExObject = { NULL, 0 };
+
+const ATL::_ATL_OBJMAP_ENTRY_EX __objMap_CPyDispatchExObject = {
+	&__uuidof(PyDispatchExObject),
+	CPyDispatchExObject::UpdateRegistry,
+	CPyDispatchExObject::_ClassFactoryCreatorClass::CreateInstance,
+	CPyDispatchExObject::_CreatorClass::CreateInstance,
+	&__objCache__CPyDispatchExObject,
+	CPyDispatchExObject::GetObjectDescription,
+	CPyDispatchExObject::GetCategoryMap,
+	CPyDispatchExObject::ObjectMain
+};
+
+extern "C" __declspec(allocate("ATL$__m")) __declspec(selectany) const ATL::_ATL_OBJMAP_ENTRY_EX* const __pobjMap_CPyDispatchExObject = &__objMap_CPyDispatchExObject;
+__pragma(comment(linker, "/include:__pobjMap_" "CPyDispatchExObject"));
