@@ -43,9 +43,6 @@
     <ClInclude Include="utils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="winrt_module.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="registry_object.h">
       <Filter>Header Files</Filter>
     </ClInclude>

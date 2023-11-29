@@ -192,7 +192,6 @@ LSTATUS RegKey::SetValue(
 	return ::RegSetValueEx(m_hKey, lpszValueName, 0, dwType,
 		reinterpret_cast<const BYTE*>(lpszValue), nValueLen * sizeof(TCHAR));
 }
-#pragma warning(pop)  // disable 4996
 
 LSTATUS RegKey::SetValue(
 	_In_opt_z_ LPCTSTR pszValueName,

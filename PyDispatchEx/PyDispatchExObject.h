@@ -7,7 +7,6 @@
 #include <vector>
 #include <variant>
 
-#include "winrt_module.h"
 #include "registry_object.h"
 #include "utils.h"
 

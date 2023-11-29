@@ -30,31 +30,6 @@ HRESULT RegObject::FinalConstruct()
 
 void RegObject::FinalRelease() {}
 
-HRESULT RegObject::FileRegister(LPCOLESTR bstrFileName)
-{
-	return CommonFileRegister(bstrFileName, TRUE);
-}
-
-HRESULT RegObject::FileUnregister(LPCOLESTR bstrFileName)
-{
-	return CommonFileRegister(bstrFileName, FALSE);
-}
-
-HRESULT RegObject::StringRegister(LPCOLESTR bstrData)
-{
-	return RegisterWithString(bstrData, TRUE);
-}
-
-HRESULT RegObject::StringUnregister(LPCOLESTR bstrData)
-{
-	return RegisterWithString(bstrData, FALSE);
-}
-
-HRESULT RegObject::GenerateError(UINT)
-{
-	return DISP_E_EXCEPTION;
-}
-
 HRESULT STDMETHODCALLTYPE RegObject::AddReplacement(LPCOLESTR lpszKey, LPCOLESTR lpszItem)
 {
 	if (lpszKey == NULL || lpszItem == NULL)
@@ -246,26 +221,6 @@ HRESULT STDMETHODCALLTYPE RegObject::ResourceUnregisterSz(
 	return RegisterFromResource(szFileName, lpszID, lpszType, FALSE);
 }
 
-HRESULT RegObject::RegisterWithString(
-	_In_z_ LPCOLESTR bstrData,
-	_In_ BOOL bRegister)
-{
-	USES_CONVERSION_EX;
-	RegParser  parser(this);
-
-	LPCTSTR szReg = OLE2CT_EX(bstrData, _ATL_SAFE_ALLOCA_DEF_THRESHOLD);
-#ifndef _UNICODE
-	if (szReg == NULL)
-	{
-		return E_OUTOFMEMORY;
-	}
-#endif // _UNICODE
-
-	HRESULT hr = parser.RegisterBuffer((LPTSTR)szReg, bRegister);
-
-	return hr;
-}
-
 HRESULT RegObject::ClearReplacements()
 {
 	m_csMap.Lock();
@@ -284,82 +239,3 @@ LPCOLESTR RegObject::StrFromMap(_In_z_ LPTSTR lpszKey)
 	m_csMap.Unlock();
 	return lpsz;
 }
-
-#pragma warning(suppress: 6262) // Stack size of '1092' bytes is OK
-HRESULT RegObject::CommonFileRegister(
-	_In_z_ LPCOLESTR bstrFileName,
-	_In_ BOOL bRegister)
-{
-	USES_CONVERSION_EX;
-
-	RegParser  parser(this);
-
-	LPCTSTR lpszBSTRFileName = OLE2CT_EX(bstrFileName, _ATL_SAFE_ALLOCA_DEF_THRESHOLD);
-#ifndef _UNICODE
-	if (lpszBSTRFileName == NULL)
-	{
-		return E_OUTOFMEMORY;
-	}
-#endif // _UNICODE
-
-	HANDLE hFile = CreateFile(lpszBSTRFileName, GENERIC_READ, 0, NULL,
-		OPEN_EXISTING,
-		FILE_ATTRIBUTE_READONLY,
-		NULL);
-	if (INVALID_HANDLE_VALUE == hFile)
-	{
-		ATLTRACE2(atlTraceRegistrar, 0, _T("Failed to CreateFile on %Ts\n"), lpszBSTRFileName);
-		return AtlHresultFromLastError();
-	}
-
-	HRESULT hRes = S_OK;
-	DWORD cbRead;
-	CTempBuffer<char, 1024> szReg;
-
-	DWORD cbFile = GetFileSize(hFile, NULL); // No HiOrder DWORD required
-	if (INVALID_FILE_SIZE == cbFile)
-	{
-		hRes = AtlHresultFromLastError();
-		goto ReturnHR;
-	}
-	// Extra space for NULL.
-	ATLTRY(szReg.Allocate(cbFile + 1));
-	if (szReg == NULL)
-	{
-		hRes = E_OUTOFMEMORY;
-		goto ReturnHR;
-	}
-
-	if (ReadFile(hFile, szReg, cbFile, &cbRead, NULL) == 0)
-	{
-		ATLTRACE2(atlTraceRegistrar, 0, "Read Failed on file %s\n", lpszBSTRFileName);
-		hRes = AtlHresultFromLastError();
-	}
-	if (SUCCEEDED(hRes))
-	{
-		szReg[cbRead] = '\0';
-
-#ifdef _UNICODE
-		CTempBuffer<WCHAR, 1024> szConverted;
-		ATLTRY(szConverted.Allocate(cbFile + 1));
-		if (szConverted == NULL)
-		{
-			hRes = E_OUTOFMEMORY;
-			goto ReturnHR;
-
-		}
-		if (::MultiByteToWideChar(_AtlGetConversionACP(), 0, szReg, cbFile + 1, szConverted, cbFile + 1) == 0)
-		{
-			hRes = AtlHresultFromLastError();
-			goto ReturnHR;
-		}
-#else
-		LPTSTR szConverted = szReg;
-#endif
-		hRes = parser.RegisterBuffer(szConverted, bRegister);
-	}
-ReturnHR:
-	CloseHandle(hFile);
-	return hRes;
-}
-
