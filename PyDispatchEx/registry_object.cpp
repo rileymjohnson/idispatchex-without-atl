@@ -1,6 +1,9 @@
 #include <string>
 
 #include "registry_object.h"
+
+#include <iostream>
+
 #include "registry_parser.h"
 
 HRESULT RegObject::QueryInterface(const IID&, void**)
@@ -32,7 +35,7 @@ void RegObject::FinalRelease() {}
 
 HRESULT STDMETHODCALLTYPE RegObject::AddReplacement(LPCOLESTR lpszKey, LPCOLESTR lpszItem)
 {
-	if (lpszKey == NULL || lpszItem == NULL)
+	if (lpszKey == nullptr || lpszItem == nullptr)
 		return E_INVALIDARG;
 
 	m_csMap.Lock();
@@ -48,45 +51,39 @@ HRESULT RegObject::RegisterFromResource(
 	_In_z_ LPCTSTR szType,
 	_In_ BOOL bRegister)
 {
-	USES_CONVERSION_EX;
-
 	HRESULT     hr;
 	RegParser  parser(this);
-	HINSTANCE   hInstResDll;
 	HRSRC       hrscReg;
 	HGLOBAL     hReg;
 	DWORD       dwSize;
 	LPSTR       szRegA;
 	CTempBuffer<TCHAR, 1024> szReg;
 
-	LPCTSTR lpszBSTRFileName = OLE2CT_EX(bstrFileName, _ATL_SAFE_ALLOCA_DEF_THRESHOLD);
+	HINSTANCE hInstResDll = LoadLibraryEx(bstrFileName, nullptr, LOAD_LIBRARY_AS_DATAFILE_EXCLUSIVE | LOAD_LIBRARY_AS_IMAGE_RESOURCE);
 
-	hInstResDll = LoadLibraryEx(lpszBSTRFileName, NULL, LOAD_LIBRARY_AS_DATAFILE_EXCLUSIVE | LOAD_LIBRARY_AS_IMAGE_RESOURCE);
-
-	if (NULL == hInstResDll)
+	if (nullptr == hInstResDll)
 	{
-		// if library load failed using flags only valid on Vista+, fall back to using flags valid on XP
-		hInstResDll = LoadLibraryEx(lpszBSTRFileName, NULL, LOAD_LIBRARY_AS_DATAFILE);
+		hInstResDll = LoadLibraryEx(bstrFileName, nullptr, LOAD_LIBRARY_AS_DATAFILE);
 	}
 
-	if (NULL == hInstResDll)
+	if (nullptr == hInstResDll)
 	{
-		hr = AtlHresultFromLastError();
+		hr = winrt::impl::hresult_from_win32(WINRT_IMPL_GetLastError());
 		goto ReturnHR;
 	}
 
 	hrscReg = FindResource(hInstResDll, szID, szType);
 
-	if (NULL == hrscReg)
+	if (nullptr == hrscReg)
 	{
-		hr = AtlHresultFromLastError();
+		hr = winrt::impl::hresult_from_win32(WINRT_IMPL_GetLastError());
 		goto ReturnHR;
 	}
 	hReg = LoadResource(hInstResDll, hrscReg);
 
-	if (NULL == hReg)
+	if (nullptr == hReg)
 	{
-		hr = AtlHresultFromLastError();
+		hr = winrt::impl::hresult_from_win32(WINRT_IMPL_GetLastError());
 		goto ReturnHR;
 	}
 
@@ -101,28 +98,28 @@ HRESULT RegObject::RegisterFromResource(
 	}
 
 	ATLTRY(szReg.Allocate(dwSize + 1));
-	if (szReg == NULL)
+	if (szReg == nullptr)
 	{
 		hr = E_OUTOFMEMORY;
 		goto ReturnHR;
 	}
 
 	{
-		DWORD uniSize = ::MultiByteToWideChar(_AtlGetConversionACP(), 0, szRegA, dwSize, szReg, dwSize);
+		DWORD uniSize = ::MultiByteToWideChar(CP_THREAD_ACP, 0, szRegA, dwSize, szReg, dwSize);
 		if (uniSize == 0)
 		{
-			hr = AtlHresultFromLastError();
+			hr = winrt::impl::hresult_from_win32(WINRT_IMPL_GetLastError());
 			goto ReturnHR;
 		}
 		// Append a NULL at the end.
-		szReg[uniSize] = _T('\0');
+		szReg[uniSize] = L'\0';
 	}
 
 	hr = parser.RegisterBuffer(szReg, bRegister);
 
 ReturnHR:
 
-	if (NULL != hInstResDll)
+	if (nullptr != hInstResDll)
 		FreeLibrary(hInstResDll);
 	return hr;
 }
@@ -132,17 +129,7 @@ HRESULT STDMETHODCALLTYPE RegObject::ResourceRegister(
 	_In_ UINT nID,
 	_In_z_ LPCOLESTR szType)
 {
-	USES_CONVERSION_EX;
-
-	LPCTSTR lpszT = OLE2CT_EX(szType, _ATL_SAFE_ALLOCA_DEF_THRESHOLD);
-#ifndef _UNICODE
-	if (lpszT == NULL)
-	{
-		return E_OUTOFMEMORY;
-	}
-#endif // _UNICODE
-
-	return RegisterFromResource(szFileName, MAKEINTRESOURCE(nID), lpszT, TRUE);
+	return RegisterFromResource(szFileName, MAKEINTRESOURCE(nID), szType, TRUE);
 }
 
 HRESULT STDMETHODCALLTYPE RegObject::ResourceUnregister(
@@ -150,16 +137,7 @@ HRESULT STDMETHODCALLTYPE RegObject::ResourceUnregister(
 	_In_ UINT nID,
 	_In_z_ LPCOLESTR szType)
 {
-	USES_CONVERSION_EX;
-
-	LPCTSTR lpszT = OLE2CT_EX(szType, _ATL_SAFE_ALLOCA_DEF_THRESHOLD);
-#ifndef _UNICODE
-	if (lpszT == NULL)
-	{
-		return E_OUTOFMEMORY;
-	}
-#endif // _UNICODE
-	return RegisterFromResource(szFileName, MAKEINTRESOURCE(nID), lpszT, FALSE);
+	return RegisterFromResource(szFileName, MAKEINTRESOURCE(nID), szType, FALSE);
 }
 
 HRESULT RegObject::ClearReplacements()
@@ -174,7 +152,8 @@ HRESULT RegObject::ClearReplacements()
 LPCOLESTR RegObject::StrFromMap(_In_z_ LPTSTR lpszKey)
 {
 	m_csMap.Lock();
-	LPCOLESTR lpsz = m_RepMap.Lookup(lpszKey);
+	const LPCOLESTR lpsz = m_RepMap.Lookup(lpszKey);
 	m_csMap.Unlock();
+
 	return lpsz;
 }

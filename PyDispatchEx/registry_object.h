@@ -1,6 +1,8 @@
 #pragma once
 #include "pch.h"
 
+#include <unordered_map>
+
 using namespace ATL;
 
 class RegObject :
@@ -46,6 +48,7 @@ protected:
 		_In_ BOOL bRegister);
 
 	CExpansionVector m_RepMap;
+	std::unordered_map<LPCOLESTR, LPCOLESTR> m_RepMap2;
 	CComObjectThreadModel::AutoDeleteCriticalSection m_csMap;
 };
 
