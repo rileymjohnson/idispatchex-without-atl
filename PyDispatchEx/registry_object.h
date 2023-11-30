@@ -33,17 +33,9 @@ public:
 		_In_z_ LPCOLESTR pszFileName,
 		_In_ UINT nID,
 		_In_z_ LPCOLESTR pszType);
-	HRESULT STDMETHODCALLTYPE ResourceRegisterSz(
-		_In_z_ LPCOLESTR pszFileName,
-		_In_z_ LPCOLESTR pszID,
-		_In_z_ LPCOLESTR pszType);
 	HRESULT STDMETHODCALLTYPE ResourceUnregister(
 		_In_z_ LPCOLESTR pszFileName,
 		_In_ UINT nID,
-		_In_z_ LPCOLESTR pszType);
-	HRESULT STDMETHODCALLTYPE ResourceUnregisterSz(
-		_In_z_ LPCOLESTR pszFileName,
-		_In_z_ LPCOLESTR pszID,
 		_In_z_ LPCOLESTR pszType);
 protected:
 
