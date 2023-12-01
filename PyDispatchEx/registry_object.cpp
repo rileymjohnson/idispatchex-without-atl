@@ -61,67 +61,56 @@ HRESULT RegObject::RegisterFromResource(
 
 	HINSTANCE hInstResDll = LoadLibraryEx(bstrFileName, nullptr, LOAD_LIBRARY_AS_DATAFILE_EXCLUSIVE | LOAD_LIBRARY_AS_IMAGE_RESOURCE);
 
-	if (nullptr == hInstResDll)
+	if (hInstResDll == nullptr)
 	{
 		hInstResDll = LoadLibraryEx(bstrFileName, nullptr, LOAD_LIBRARY_AS_DATAFILE);
 	}
 
 	if (nullptr == hInstResDll)
 	{
-		hr = winrt::impl::hresult_from_win32(WINRT_IMPL_GetLastError());
-		goto ReturnHR;
+		return winrt::impl::hresult_from_win32(WINRT_IMPL_GetLastError());
 	}
 
 	hrscReg = FindResource(hInstResDll, szID, szType);
 
-	if (nullptr == hrscReg)
+	if (hrscReg == nullptr)
 	{
-		hr = winrt::impl::hresult_from_win32(WINRT_IMPL_GetLastError());
-		goto ReturnHR;
+		if (hInstResDll != nullptr)
+			FreeLibrary(hInstResDll);
+
+		return winrt::impl::hresult_from_win32(WINRT_IMPL_GetLastError());
 	}
+
 	hReg = LoadResource(hInstResDll, hrscReg);
 
-	if (nullptr == hReg)
+	if (hReg == nullptr)
 	{
-		hr = winrt::impl::hresult_from_win32(WINRT_IMPL_GetLastError());
-		goto ReturnHR;
+		if (hInstResDll != nullptr)
+			FreeLibrary(hInstResDll);
+
+		return winrt::impl::hresult_from_win32(WINRT_IMPL_GetLastError());
 	}
 
 	dwSize = SizeofResource((HMODULE)hInstResDll, hrscReg);
 	szRegA = (LPSTR)hReg;
+	return parser.RegisterBuffer(const_cast<LPTSTR>(winrt::to_hstring(szRegA).c_str()), bRegister);
 
-	// Allocate extra space for NULL.
-	if (dwSize + 1 < dwSize)
-	{
-		hr = E_OUTOFMEMORY;
-		goto ReturnHR;
-	}
-
-	ATLTRY(szReg.Allocate(dwSize + 1));
-	if (szReg == nullptr)
-	{
-		hr = E_OUTOFMEMORY;
-		goto ReturnHR;
-	}
-
+	szReg.Allocate(dwSize + 1);
+	
 	{
 		DWORD uniSize = ::MultiByteToWideChar(CP_THREAD_ACP, 0, szRegA, dwSize, szReg, dwSize);
 		if (uniSize == 0)
 		{
-			hr = winrt::impl::hresult_from_win32(WINRT_IMPL_GetLastError());
-			goto ReturnHR;
+			if (hInstResDll != nullptr)
+				FreeLibrary(hInstResDll);
+
+			return winrt::impl::hresult_from_win32(WINRT_IMPL_GetLastError());
 		}
 		// Append a NULL at the end.
 		szReg[uniSize] = L'\0';
 	}
 
-	hr = parser.RegisterBuffer(szReg, bRegister);
-
-ReturnHR:
-
-	if (nullptr != hInstResDll)
-		FreeLibrary(hInstResDll);
-	return hr;
+	return parser.RegisterBuffer(szReg, bRegister);
 }
 
 HRESULT STDMETHODCALLTYPE RegObject::ResourceRegister(
