@@ -51,14 +51,6 @@ HRESULT RegObject::RegisterFromResource(
 	_In_z_ LPCTSTR szType,
 	_In_ BOOL bRegister)
 {
-	HRESULT     hr;
-	RegParser  parser(this);
-	HRSRC       hrscReg;
-	HGLOBAL     hReg;
-	DWORD       dwSize;
-	LPSTR       szRegA;
-	CTempBuffer<TCHAR, 1024> szReg;
-
 	HINSTANCE hInstResDll = LoadLibraryEx(bstrFileName, nullptr, LOAD_LIBRARY_AS_DATAFILE_EXCLUSIVE | LOAD_LIBRARY_AS_IMAGE_RESOURCE);
 
 	if (hInstResDll == nullptr)
@@ -66,12 +58,12 @@ HRESULT RegObject::RegisterFromResource(
 		hInstResDll = LoadLibraryEx(bstrFileName, nullptr, LOAD_LIBRARY_AS_DATAFILE);
 	}
 
-	if (nullptr == hInstResDll)
+	if (hInstResDll == nullptr)
 	{
 		return winrt::impl::hresult_from_win32(WINRT_IMPL_GetLastError());
 	}
 
-	hrscReg = FindResource(hInstResDll, szID, szType);
+	HRSRC hrscReg = FindResource(hInstResDll, szID, szType);
 
 	if (hrscReg == nullptr)
 	{
@@ -81,7 +73,7 @@ HRESULT RegObject::RegisterFromResource(
 		return winrt::impl::hresult_from_win32(WINRT_IMPL_GetLastError());
 	}
 
-	hReg = LoadResource(hInstResDll, hrscReg);
+	HGLOBAL hReg = LoadResource(hInstResDll, hrscReg);
 
 	if (hReg == nullptr)
 	{
@@ -91,26 +83,10 @@ HRESULT RegObject::RegisterFromResource(
 		return winrt::impl::hresult_from_win32(WINRT_IMPL_GetLastError());
 	}
 
-	dwSize = SizeofResource((HMODULE)hInstResDll, hrscReg);
-	szRegA = (LPSTR)hReg;
-	return parser.RegisterBuffer(const_cast<LPTSTR>(winrt::to_hstring(szRegA).c_str()), bRegister);
-
-	szReg.Allocate(dwSize + 1);
-	
-	{
-		DWORD uniSize = ::MultiByteToWideChar(CP_THREAD_ACP, 0, szRegA, dwSize, szReg, dwSize);
-		if (uniSize == 0)
-		{
-			if (hInstResDll != nullptr)
-				FreeLibrary(hInstResDll);
-
-			return winrt::impl::hresult_from_win32(WINRT_IMPL_GetLastError());
-		}
-		// Append a NULL at the end.
-		szReg[uniSize] = L'\0';
-	}
-
-	return parser.RegisterBuffer(szReg, bRegister);
+	return RegParser{ this }.RegisterBuffer(
+		const_cast<LPTSTR>(winrt::to_hstring(static_cast<const char*>(hReg)).c_str()),
+		bRegister
+	);
 }
 
 HRESULT STDMETHODCALLTYPE RegObject::ResourceRegister(

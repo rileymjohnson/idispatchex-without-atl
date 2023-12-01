@@ -1,10 +1,5 @@
 #include "registry_parser.h"
 
-HRESULT RegParser::GenerateError(UINT)
-{
-	return DISP_E_EXCEPTION;
-}
-
 BOOL RegParser::EndOfVar()
 {
 	return chQuote == *m_pchCur && chQuote != *CharNext(m_pchCur);
@@ -12,13 +7,11 @@ BOOL RegParser::EndOfVar()
 
 RegParser::CParseBuffer::CParseBuffer(int nInitial)
 {
-	if (nInitial < 100)
-		nInitial = 1000;
 	nPos = 0;
-	nSize = nInitial;
-	p = (LPTSTR) ::ATL::AtlCoTaskMemCAlloc(nSize, static_cast<ULONG>(sizeof(TCHAR)));
-	if (p != NULL)
-		*p = _T('\0');
+	nSize = nInitial < 100 ? 1000 : nInitial;
+	p = static_cast<LPTSTR>(CoTaskMemAlloc(nSize * sizeof(TCHAR)));
+	if (p != nullptr)
+		*p = L'\0';
 }
 
 RegParser::CParseBuffer::~CParseBuffer()
@@ -31,7 +24,7 @@ BOOL RegParser::CParseBuffer::Append(const TCHAR* pch, int nChars)
 	ATLASSERT(p != NULL);
 	ATLASSUME(p != NULL);
 	int newSize = nPos + nChars + 1;
-	if ((newSize <= nPos) || (newSize <= nChars))
+	if (newSize <= nPos || newSize <= nChars)
 		return FALSE;
 
 	if (newSize >= nSize)
@@ -41,186 +34,94 @@ BOOL RegParser::CParseBuffer::Append(const TCHAR* pch, int nChars)
 				return FALSE;
 			nSize *= 2;
 		}
-		LPTSTR pTemp = (LPTSTR)::ATL::AtlCoTaskMemRecalloc(p, nSize, sizeof(TCHAR));
-		if (pTemp == NULL)
+		auto pTemp = static_cast<LPTSTR>(CoTaskMemRealloc(p, nSize * sizeof(TCHAR)));
+		if (pTemp == nullptr)
 			return FALSE;
 		p = pTemp;
 	}
-	if ((nPos < 0) || (nPos >= nSize) || nSize - nPos > nSize)
+	if (nPos < 0 || nPos >= nSize || nSize - nPos > nSize)
 		return FALSE;
 
-#pragma warning(push)
-#pragma warning(disable: 22008)
 	/* Prefast false warning is fired here despite the all above checks */
 	Checked::memcpy_s(p + nPos, (nSize - nPos) * sizeof(TCHAR), pch, nChars * sizeof(TCHAR));
 	nPos += nChars;
 	*(p + nPos) = _T('\0');
-#pragma warning(pop)
 	return TRUE;
-}
-
-BOOL RegParser::CParseBuffer::AddChar(const TCHAR* pch)
-{
-#ifndef _UNICODE
-	int nChars = int(CharNext(pch) - pch);
-#else
-	int nChars = 1;
-#endif
-	return Append(pch, nChars);
-
-}
-
-BOOL RegParser::CParseBuffer::AddString(LPCOLESTR lpsz)
-{
-	if (lpsz == NULL)
-	{
-		return FALSE;
-	}
-	USES_CONVERSION_EX;
-	LPCTSTR lpszT = OLE2CT_EX(lpsz, _ATL_SAFE_ALLOCA_DEF_THRESHOLD);
-	if (lpszT == NULL)
-	{
-		return FALSE;
-	}
-	return Append(lpszT, (int)_tcslen(lpszT));
 }
 
 LPTSTR RegParser::CParseBuffer::Detach()
 {
 	LPTSTR lp = p;
-	p = NULL;
+	p = nullptr;
 	nSize = nPos = 0;
 	return lp;
 }
 
-
-__declspec(selectany) const TCHAR* const RegParser::rgszNeverDelete[] =
-{
-	_T("AppID"),
-	_T("CLSID"),
-	_T("Component Categories"),
-	_T("FileType"),
-	_T("Interface"),
-	_T("Hardware"),
-	_T("Mime"),
-	_T("SAM"),
-	_T("SECURITY"),
-	_T("SYSTEM"),
-	_T("Software"),
-	_T("TypeLib")
+static const std::array never_delete{
+	L"AppID",
+	L"CLSID",
+	L"Component Categories",
+	L"FileType",
+	L"Interface",
+	L"Hardware",
+	L"Mime",
+	L"SAM",
+	L"SECURITY",
+	L"SYSTEM",
+	L"Software",
+	L"TypeLib"
 };
-
-__declspec(selectany) const int RegParser::cbNeverDelete = sizeof(rgszNeverDelete) / sizeof(LPCTSTR*);
-
-
-BOOL RegParser::VTFromRegType(
-	_In_z_ LPCTSTR szValueType,
-	_Out_ VARTYPE& vt)
-{
-	if (!lstrcmpi(szValueType, szStringVal))
-	{
-		vt = VT_BSTR;
-		return TRUE;
-	}
-
-	if (!lstrcmpi(szValueType, multiszStringVal))
-	{
-		vt = VT_BSTR | VT_BYREF;
-		return TRUE;
-	}
-
-	if (!lstrcmpi(szValueType, szDwordVal))
-	{
-		vt = VT_UI4;
-		return TRUE;
-	}
-
-	if (!lstrcmpi(szValueType, szBinaryVal))
-	{
-		vt = VT_UI1;
-		return TRUE;
-	}
-
-	vt = VT_EMPTY;
-	return FALSE;
-}
 
 BYTE RegParser::ChToByte(_In_ const TCHAR ch)
 {
-	switch (ch)
+	if (std::isxdigit(ch))
 	{
-	case '0':
-	case '1':
-	case '2':
-	case '3':
-	case '4':
-	case '5':
-	case '6':
-	case '7':
-	case '8':
-	case '9':
-		return (BYTE)(ch - '0');
-	case 'A':
-	case 'B':
-	case 'C':
-	case 'D':
-	case 'E':
-	case 'F':
-		return (BYTE)(10 + (ch - 'A'));
-	case 'a':
-	case 'b':
-	case 'c':
-	case 'd':
-	case 'e':
-	case 'f':
-		return (BYTE)(10 + (ch - 'a'));
-	default:
-		ATLASSERT(FALSE);
-		ATLTRACE(atlTraceRegistrar, 0, _T("Bogus value %Tc passed as binary Hex value\n"), ch);
-		return 0;
+		if (std::isdigit(ch))
+		{
+			return static_cast<BYTE>(ch - '0');
+		}
+
+		return static_cast<BYTE>(10 + (ch - (std::isupper(ch) ? 'A' : 'a')));
 	}
+
+	return 0;
 }
+
+static const std::array hkey_string_map = {
+	std::pair{L"HKCR", HKEY_CLASSES_ROOT},
+	std::pair{L"HKCU", HKEY_CURRENT_USER},
+	std::pair{L"HKLM", HKEY_LOCAL_MACHINE},
+	std::pair{L"HKU",  HKEY_USERS},
+	std::pair{L"HKPD", HKEY_PERFORMANCE_DATA},
+	std::pair{L"HKDD", HKEY_DYN_DATA},
+	std::pair{L"HKCC", HKEY_CURRENT_CONFIG},
+	std::pair{L"HKEY_CLASSES_ROOT", HKEY_CLASSES_ROOT},
+	std::pair{L"HKEY_CURRENT_USER", HKEY_CURRENT_USER},
+	std::pair{L"HKEY_LOCAL_MACHINE", HKEY_LOCAL_MACHINE},
+	std::pair{L"HKEY_USERS", HKEY_USERS},
+	std::pair{L"HKEY_PERFORMANCE_DATA", HKEY_PERFORMANCE_DATA},
+	std::pair{L"HKEY_DYN_DATA", HKEY_DYN_DATA},
+	std::pair{L"HKEY_CURRENT_CONFIG", HKEY_CURRENT_CONFIG}
+};
 
 HKEY RegParser::HKeyFromString(_In_z_ LPTSTR szToken)
 {
-	struct keymap
+	const auto item = std::ranges::find_if(hkey_string_map, [szToken](const auto& p)
 	{
-		LPCTSTR lpsz;
-		HKEY hkey;
-	};
-	static const keymap map[] = {
-		{_T("HKCR"), HKEY_CLASSES_ROOT},
-		{_T("HKCU"), HKEY_CURRENT_USER},
-		{_T("HKLM"), HKEY_LOCAL_MACHINE},
-		{_T("HKU"),  HKEY_USERS},
-		{_T("HKPD"), HKEY_PERFORMANCE_DATA},
-		{_T("HKDD"), HKEY_DYN_DATA},
-		{_T("HKCC"), HKEY_CURRENT_CONFIG},
-		{_T("HKEY_CLASSES_ROOT"), HKEY_CLASSES_ROOT},
-		{_T("HKEY_CURRENT_USER"), HKEY_CURRENT_USER},
-		{_T("HKEY_LOCAL_MACHINE"), HKEY_LOCAL_MACHINE},
-		{_T("HKEY_USERS"), HKEY_USERS},
-		{_T("HKEY_PERFORMANCE_DATA"), HKEY_PERFORMANCE_DATA},
-		{_T("HKEY_DYN_DATA"), HKEY_DYN_DATA},
-		{_T("HKEY_CURRENT_CONFIG"), HKEY_CURRENT_CONFIG}
-	};
+		return !lstrcmpi(szToken, p.first);
+	});
 
-	for (int i = 0; i < sizeof(map) / sizeof(keymap); i++)
-	{
-		if (!lstrcmpi(szToken, map[i].lpsz))
-			return map[i].hkey;
-	}
-	return NULL;
+	return item != hkey_string_map.end() ? item->second : nullptr;
 }
 
 LPTSTR RegParser::StrChr(
 	_In_z_ LPTSTR lpsz,
 	_In_ TCHAR ch)
 {
-	LPTSTR p = NULL;
+	LPTSTR p = nullptr;
 
-	if (lpsz == NULL)
-		return NULL;
+	if (lpsz == nullptr)
+		return nullptr;
 
 	while (*lpsz)
 	{
@@ -237,26 +138,12 @@ LPTSTR RegParser::StrChr(
 RegParser::RegParser(_In_ RegObject* pRegObj)
 {
 	m_pRegObj = pRegObj;
-	m_pchCur = NULL;
-}
-
-BOOL RegParser::IsSpace(_In_ TCHAR ch)
-{
-	switch (ch)
-	{
-	case _T(' '):
-	case _T('\t'):
-	case _T('\r'):
-	case _T('\n'):
-		return TRUE;
-	}
-
-	return FALSE;
+	m_pchCur = nullptr;
 }
 
 void RegParser::SkipWhiteSpace()
 {
-	while (IsSpace(*m_pchCur))
+	while (std::isspace(*m_pchCur))
 		m_pchCur = CharNext(m_pchCur);
 }
 
@@ -267,7 +154,7 @@ HRESULT RegParser::NextToken(_Out_writes_z_(MAX_VALUE) LPTSTR szToken)
 
 	// NextToken cannot be called at EOS
 	if (_T('\0') == *m_pchCur)
-		return GenerateError(E_ATL_UNEXPECTED_EOS);
+		return DISP_E_EXCEPTION;
 
 	LPCTSTR szOrig = szToken;
 	// handle quoted value / key
@@ -287,7 +174,7 @@ HRESULT RegParser::NextToken(_Out_writes_z_(MAX_VALUE) LPTSTR szToken)
 
 			// Make sure we have room for nChars plus terminating NULL
 			if ((szToken + nChars + 1) >= szOrig + MAX_VALUE)
-				return GenerateError(E_ATL_VALUE_TOO_LARGE);
+				return DISP_E_EXCEPTION;
 
 			for (int i = 0; i < (int)nChars; i++, szToken++, pchPrev++)
 				*szToken = *pchPrev;
@@ -296,7 +183,7 @@ HRESULT RegParser::NextToken(_Out_writes_z_(MAX_VALUE) LPTSTR szToken)
 		if (_T('\0') == *m_pchCur)
 		{
 			ATLTRACE(atlTraceRegistrar, 0, _T("NextToken : Unexpected End of File\n"));
-			return GenerateError(E_ATL_UNEXPECTED_EOS);
+			return DISP_E_EXCEPTION;
 		}
 
 		*szToken = _T('\0');
@@ -306,7 +193,7 @@ HRESULT RegParser::NextToken(_Out_writes_z_(MAX_VALUE) LPTSTR szToken)
 	else
 	{
 		// Handle non-quoted ie parse up till first "White Space"
-		while (_T('\0') != *m_pchCur && !IsSpace(*m_pchCur))
+		while (_T('\0') != *m_pchCur && !std::isspace(*m_pchCur))
 		{
 			LPTSTR pchPrev = m_pchCur;
 			m_pchCur = CharNext(m_pchCur);
@@ -315,7 +202,7 @@ HRESULT RegParser::NextToken(_Out_writes_z_(MAX_VALUE) LPTSTR szToken)
 
 			// Make sure we have room for nChars plus terminating NULL
 			if ((szToken + nChars + 1) >= szOrig + MAX_VALUE)
-				return GenerateError(E_ATL_VALUE_TOO_LARGE);
+				return DISP_E_EXCEPTION;
 
 			for (int i = 0; i < (int)nChars; i++, szToken++, pchPrev++)
 				*szToken = *pchPrev;
@@ -326,7 +213,6 @@ HRESULT RegParser::NextToken(_Out_writes_z_(MAX_VALUE) LPTSTR szToken)
 	return S_OK;
 }
 
-#pragma warning(suppress: 6262) // Stack size of '4704' bytes is OK
 HRESULT RegParser::AddValue(
 	_Inout_ RegKey& rkParent,
 	_In_opt_z_ LPCTSTR szValueName,
@@ -335,17 +221,12 @@ HRESULT RegParser::AddValue(
 	HRESULT hr;
 
 	TCHAR		szValue[MAX_VALUE];
-	VARTYPE     vt = VT_EMPTY;
+	VARTYPE     vt = VT_BSTR;
 	LONG        lRes = ERROR_SUCCESS;
 	UINT        nIDRes = 0;
 
 	if (FAILED(hr = NextToken(szValue)))
 		return hr;
-	if (!VTFromRegType(szValue, vt))
-	{
-		ATLTRACE(atlTraceRegistrar, 0, _T("%Ts Type not supported\n"), szValue);
-		return GenerateError(E_ATL_TYPE_NOT_SUPPORTED);
-	}
 
 	SkipWhiteSpace();
 	if (FAILED(hr = NextToken(szValue)))
@@ -374,22 +255,21 @@ HRESULT RegParser::AddValue(
 }
 ATLPREFAST_UNSUPPRESS()
 
-BOOL RegParser::CanForceRemoveKey(_In_z_ LPCTSTR szKey)
+bool RegParser::CanForceRemoveKey(_In_z_ LPCTSTR szKey)
 {
-	for (int iNoDel = 0; iNoDel < cbNeverDelete; iNoDel++)
-		if (!lstrcmpi(szKey, rgszNeverDelete[iNoDel]))
-			return FALSE;                       // We cannot delete it
-
-	return TRUE;
+	return std::ranges::none_of(never_delete, [szKey](const auto& key)
+		{
+			return lstrcmpi(szKey, key) == 0;
+		});
 }
 
 BOOL RegParser::HasSubKeys(_In_ HKEY hkey)
 {
 	DWORD cSubKeys = 0;
 
-	if (RegQueryInfoKeyW(hkey, NULL, NULL, NULL,
-		&cSubKeys, NULL, NULL,
-		NULL, NULL, NULL, NULL, NULL) != ERROR_SUCCESS)
+	if (RegQueryInfoKeyW(hkey, nullptr, nullptr, nullptr,
+		&cSubKeys, nullptr, nullptr,
+		nullptr, nullptr, nullptr, nullptr, nullptr) != ERROR_SUCCESS)
 	{
 		ATLTRACE(atlTraceRegistrar, 0, _T("Should not be here!!\n"));
 		ATLASSERT(FALSE);
@@ -404,9 +284,9 @@ BOOL RegParser::HasValues(_In_ HKEY hkey)
 	DWORD cValues = 0;
 	DWORD cMaxValueNameLen;
 
-	LONG lResult = RegQueryInfoKeyW(hkey, NULL, NULL, NULL,
-		NULL, NULL, NULL,
-		&cValues, &cMaxValueNameLen, NULL, NULL, NULL);
+	LONG lResult = RegQueryInfoKeyW(hkey, nullptr, nullptr, nullptr,
+	                                nullptr, nullptr, nullptr,
+		&cValues, &cMaxValueNameLen, nullptr, nullptr, nullptr);
 	if (ERROR_SUCCESS != lResult)
 	{
 		ATLTRACE(atlTraceRegistrar, 0, _T("RegQueryInfoKey Failed "));
@@ -422,7 +302,6 @@ BOOL RegParser::HasValues(_In_ HKEY hkey)
 	return cValues > 0; // More than 1 means we have a non-default value
 }
 
-#pragma warning(suppress: 6262) // Stack size of '4108' bytes is OK
 HRESULT RegParser::SkipAssignment(_Inout_updates_z_(MAX_VALUE) LPTSTR szToken)
 {
 	HRESULT hr;
@@ -451,13 +330,13 @@ HRESULT RegParser::PreProcessBuffer(
 	ATLASSERT(lpszReg != NULL);
 	ATLASSERT(ppszReg != NULL);
 
-	if (lpszReg == NULL || ppszReg == NULL)
+	if (lpszReg == nullptr || ppszReg == nullptr)
 		return E_POINTER;
 
-	*ppszReg = NULL;
+	*ppszReg = nullptr;
 	int nSize = static_cast<int>(_tcslen(lpszReg)) * 2;
 	CParseBuffer pb(nSize);
-	if (pb.p == NULL)
+	if (pb.p == nullptr)
 		return E_OUTOFMEMORY;
 	m_pchCur = lpszReg;
 	HRESULT hr = S_OK;
@@ -485,8 +364,8 @@ HRESULT RegParser::PreProcessBuffer(
 			if (0 == nNestingLevel)
 			{
 				// Then we should be reading a root key. HKCR, HKCU, etc
-				TCHAR* szRootKey = NULL;
-				if (NULL != (szRootKey = _tcsstr(m_pchCur, _T("HKCR"))) &&	// if HKCR is found.
+				TCHAR* szRootKey = nullptr;
+				if (nullptr != (szRootKey = _tcsstr(m_pchCur, _T("HKCR"))) &&	// if HKCR is found.
 					(szRootKey == m_pchCur))	// if HKCR is the first token.
 				{
 					// Skip HKCR
@@ -496,7 +375,7 @@ HRESULT RegParser::PreProcessBuffer(
 					m_pchCur = CharNext(m_pchCur);
 
 					// Add HKCU
-					if (!pb.AddString(szStartHKCU))
+					if (!pb.Append(szStartHKCU, static_cast<int>(std::wcslen(szStartHKCU))))
 					{
 						hr = E_OUTOFMEMORY;
 						break;
@@ -523,7 +402,7 @@ HRESULT RegParser::PreProcessBuffer(
 					{
 						// An escaped single quote...
 						m_pchCur = CharNext(m_pchCur);
-						if (!pb.AddChar(m_pchCur))
+						if (!pb.Append(m_pchCur, 1))
 						{
 							hr = E_OUTOFMEMORY;
 							break;
@@ -542,7 +421,7 @@ HRESULT RegParser::PreProcessBuffer(
 				--nNestingLevel;
 				if ((0 == nNestingLevel) && (true == bRedirectionPresent))
 				{
-					if (!pb.AddString(szEndHKCU))
+					if (!pb.Append(szEndHKCU, static_cast<int>(std::wcslen(szEndHKCU))))
 					{
 						hr = E_OUTOFMEMORY;
 						break;
@@ -558,7 +437,7 @@ HRESULT RegParser::PreProcessBuffer(
 			m_pchCur = CharNext(m_pchCur);
 			if (*m_pchCur == _T('%'))
 			{
-				if (!pb.AddChar(m_pchCur))
+				if (!pb.Append(m_pchCur, 1))
 				{
 					hr = E_OUTOFMEMORY;
 					break;
@@ -567,10 +446,10 @@ HRESULT RegParser::PreProcessBuffer(
 			else
 			{
 				LPTSTR lpszNext = StrChr(m_pchCur, _T('%'));
-				if (lpszNext == NULL)
+				if (lpszNext == nullptr)
 				{
 					ATLTRACE(atlTraceRegistrar, 0, _T("Error no closing %% found\n"));
-					hr = GenerateError(E_ATL_UNEXPECTED_EOS);
+					hr = DISP_E_EXCEPTION;
 					break;
 				}
 				if ((lpszNext - m_pchCur) > 31)
@@ -582,12 +461,12 @@ HRESULT RegParser::PreProcessBuffer(
 				TCHAR buf[32];
 				Checked::tcsncpy_s(buf, _countof(buf), m_pchCur, nLength);
 				LPCOLESTR lpszVar = m_pRegObj->StrFromMap(buf);
-				if (lpszVar == NULL)
+				if (lpszVar == nullptr)
 				{
-					hr = GenerateError(E_ATL_NOT_IN_MAP);
+					hr = DISP_E_EXCEPTION;
 					break;
 				}
-				if (!pb.AddString(lpszVar))
+				if (!pb.Append(lpszVar, static_cast<int>(std::wcslen(lpszVar))))
 				{
 					hr = E_OUTOFMEMORY;
 					break;
@@ -599,7 +478,7 @@ HRESULT RegParser::PreProcessBuffer(
 		}
 		else
 		{
-			if (!pb.AddChar(m_pchCur))
+			if (!pb.Append(m_pchCur, 1))
 			{
 				hr = E_OUTOFMEMORY;
 				break;
@@ -614,7 +493,6 @@ HRESULT RegParser::PreProcessBuffer(
 }
 ATLPREFAST_UNSUPPRESS()
 
-#pragma warning(suppress: 6262) // Stack size of '4124' bytes is OK
 HRESULT RegParser::RegisterBuffer(
 	_In_z_ LPTSTR szBuffer,
 	_In_ BOOL bRegister)
@@ -622,7 +500,7 @@ HRESULT RegParser::RegisterBuffer(
 	TCHAR   szToken[MAX_VALUE];
 	HRESULT hr = S_OK;
 
-	LPTSTR szReg = NULL;
+	LPTSTR szReg = nullptr;
 	hr = PreProcessBuffer(szBuffer, &szReg);
 	if (FAILED(hr))
 		return hr;
@@ -638,10 +516,10 @@ HRESULT RegParser::RegisterBuffer(
 		if (FAILED(hr = NextToken(szToken)))
 			break;
 		HKEY hkBase;
-		if ((hkBase = HKeyFromString(szToken)) == NULL)
+		if ((hkBase = HKeyFromString(szToken)) == nullptr)
 		{
 			ATLTRACE(atlTraceRegistrar, 0, _T("HKeyFromString failed on %Ts\n"), szToken);
-			hr = GenerateError(E_ATL_BAD_HKEY);
+			hr = DISP_E_EXCEPTION;
 			break;
 		}
 
@@ -651,7 +529,7 @@ HRESULT RegParser::RegisterBuffer(
 		if (chLeftBracket != *szToken)
 		{
 			ATLTRACE(atlTraceRegistrar, 0, _T("Syntax error, expecting a {, found a %Ts\n"), szToken);
-			hr = GenerateError(E_ATL_MISSING_OPENKEY_TOKEN);
+			hr = DISP_E_EXCEPTION;
 			break;
 		}
 		if (bRegister)
@@ -678,7 +556,6 @@ HRESULT RegParser::RegisterBuffer(
 	return hr;
 }
 
-#pragma warning(suppress: 6262) // Stack size of '4460' bytes is OK
 HRESULT RegParser::RegisterSubkeys(
 	_Out_writes_z_(MAX_VALUE) LPTSTR szToken,
 	_In_ HKEY hkParent,
@@ -692,7 +569,6 @@ HRESULT RegParser::RegisterSubkeys(
 	BOOL    bInRecovery = bRecover;
 	HRESULT hr = S_OK;
 
-	ATLTRACE(atlTraceRegistrar, 2, _T("Num Els = %d\n"), cbNeverDelete);
 	if (FAILED(hr = NextToken(szToken)))
 		return hr;
 
@@ -710,8 +586,8 @@ HRESULT RegParser::RegisterSubkeys(
 			{
 				RegKey rkForceRemove;
 
-				if (StrChr(szToken, chDirSep) != NULL)
-					return GenerateError(E_ATL_COMPOUND_KEY);
+				if (StrChr(szToken, chDirSep) != nullptr)
+					return DISP_E_EXCEPTION;
 
 				if (CanForceRemoveKey(szToken))
 				{
@@ -748,7 +624,7 @@ HRESULT RegParser::RegisterSubkeys(
 				break;
 
 			if (*szToken != chEquals)
-				return GenerateError(E_ATL_EXPECTING_EQUAL);
+				return DISP_E_EXCEPTION;
 
 			if (bRegister)
 			{
@@ -770,7 +646,7 @@ HRESULT RegParser::RegisterSubkeys(
 					ATLTRACE(atlTraceRegistrar, 1, _T("Deleting %Ts\n"), szValueName);
 					// We have to open the key for write to be able to delete.
 					RegKey rkParent;
-					lRes = rkParent.Open(hkParent, NULL, KEY_WRITE);
+					lRes = rkParent.Open(hkParent, nullptr, KEY_WRITE);
 					if (lRes == ERROR_SUCCESS)
 					{
 						lRes = rkParent.DeleteValue(szValueName);
@@ -793,8 +669,8 @@ HRESULT RegParser::RegisterSubkeys(
 			}
 		}
 
-		if (StrChr(szToken, chDirSep) != NULL)
-			return GenerateError(E_ATL_COMPOUND_KEY);
+		if (StrChr(szToken, chDirSep) != nullptr)
+			return DISP_E_EXCEPTION;
 
 		if (bRegister)
 		{
