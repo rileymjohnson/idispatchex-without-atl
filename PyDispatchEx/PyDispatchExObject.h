@@ -6,6 +6,7 @@
 
 #include <vector>
 #include <variant>
+#include <string>
 
 #include "registry_object.h"
 #include "utils.h"
@@ -24,7 +25,7 @@ class ATL_NO_VTABLE CPyDispatchExObject :
 	enum class member_type { property, method };
 	struct member_entry
 	{
-		wil::unique_bstr name;
+		std::wstring name;
 		DISPID dispid;
 		wil::unique_variant value;
 		bool is_deleted;
@@ -198,6 +199,7 @@ public:
 	STDMETHOD(TestMethod1)(VARIANT one, VARIANT two, VARIANT three, VARIANT four, VARIANT five, VARIANT* out_value) override;
 	STDMETHOD(get_TestProperty1)(VARIANT* pVal) override;
 	STDMETHOD(put_TestProperty1)(VARIANT newVal) override;
+	STDMETHOD(TestMethod2)(BSTR* out);
 };
 
 __declspec(selectany) ATL::_ATL_OBJMAP_CACHE __objCache__CPyDispatchExObject = { NULL, 0 };

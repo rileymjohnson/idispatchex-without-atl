@@ -132,12 +132,14 @@ STDMETHODIMP CPyDispatchExObject::DeleteMemberByName(BSTR bstrName, DWORD grfdex
 
 	const auto member = std::ranges::find_if(dynamic_members, [bstrName, grfdex](const member_entry& member)
 	{
+		const wil::unique_bstr member_name{ WINRT_IMPL_SysAllocString(member.name.c_str()) };
+
 		if (grfdex & fdexNameCaseSensitive)
 		{
-			return VarBstrCmp(bstrName, member.name.get(), LOCALE_USER_DEFAULT, NULL) == VARCMP_EQ;
+			return VarBstrCmp(bstrName, member_name.get(), LOCALE_USER_DEFAULT, NULL) == VARCMP_EQ;
 		}
 
-		return VarBstrCmp(bstrName, member.name.get(), LOCALE_USER_DEFAULT, NORM_IGNORECASE) == VARCMP_EQ;
+		return VarBstrCmp(bstrName, member_name.get(), LOCALE_USER_DEFAULT, NORM_IGNORECASE) == VARCMP_EQ;
 	});
 
 	if (member != dynamic_members.end())
@@ -157,12 +159,14 @@ STDMETHODIMP CPyDispatchExObject::DeleteMemberByName(BSTR bstrName, DWORD grfdex
 
 	 const auto member = std::ranges::find_if(dynamic_members, [bstrName, grfdex](const member_entry& member)
 		 {
+			 const wil::unique_bstr member_name{ WINRT_IMPL_SysAllocString(member.name.c_str()) };
+
 			 if (grfdex & fdexNameCaseSensitive)
 			 {
-				 return VarBstrCmp(bstrName, member.name.get(), LOCALE_USER_DEFAULT, NULL) == VARCMP_EQ;
+				 return VarBstrCmp(bstrName, member_name.get(), LOCALE_USER_DEFAULT, NULL) == VARCMP_EQ;
 			 }
 
-			 return VarBstrCmp(bstrName, member.name.get(), LOCALE_USER_DEFAULT, NORM_IGNORECASE) == VARCMP_EQ;
+			 return VarBstrCmp(bstrName, member_name.get(), LOCALE_USER_DEFAULT, NORM_IGNORECASE) == VARCMP_EQ;
 		 });
 
 	 if (member != dynamic_members.end())
@@ -192,7 +196,7 @@ STDMETHODIMP CPyDispatchExObject::DeleteMemberByName(BSTR bstrName, DWORD grfdex
 		 }
 
 		 member_entry new_member = {
-			 wil::unique_bstr{bstrName},
+			 std::wstring{ bstrName, WINRT_IMPL_SysStringLen(bstrName) },
 			 max_dispid + 1,
 			 wil::unique_variant{},
 			 false,
@@ -228,7 +232,7 @@ STDMETHODIMP CPyDispatchExObject::DeleteMemberByName(BSTR bstrName, DWORD grfdex
 
 	 if (member != dynamic_members.end())
 	 {
-		 *pbstrName = member->name.get();
+		 *pbstrName = WINRT_IMPL_SysAllocString(member->name.c_str());
 
 		 return S_OK;
 	 }
@@ -377,4 +381,9 @@ STDMETHODIMP CPyDispatchExObject::put_TestProperty1(VARIANT newVal)
 	return S_OK;
 }
 
+STDMETHODIMP CPyDispatchExObject::TestMethod2(BSTR* out)
+{
+	*out = ::SysAllocString(L"TestMethod2 out");
 
+	return S_OK;
+}

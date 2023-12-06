@@ -121,6 +121,9 @@ EXTERN_C const IID IID_IPyDispatchExObject;
         virtual /* [helpcontext][helpstring][id][propput] */ HRESULT STDMETHODCALLTYPE put_TestProperty1( 
             /* [in] */ VARIANT newVal) = 0;
         
+        virtual /* [helpstring][id] */ HRESULT STDMETHODCALLTYPE TestMethod2( 
+            /* [retval][out] */ BSTR *out) = 0;
+        
     };
     
     
@@ -267,6 +270,11 @@ EXTERN_C const IID IID_IPyDispatchExObject;
             IPyDispatchExObject * This,
             /* [in] */ VARIANT newVal);
         
+        DECLSPEC_XFGVIRT(IPyDispatchExObject, TestMethod2)
+        /* [helpstring][id] */ HRESULT ( STDMETHODCALLTYPE *TestMethod2 )( 
+            IPyDispatchExObject * This,
+            /* [retval][out] */ BSTR *out);
+        
         END_INTERFACE
     } IPyDispatchExObjectVtbl;
 
@@ -337,6 +345,9 @@ EXTERN_C const IID IID_IPyDispatchExObject;
 #define IPyDispatchExObject_put_TestProperty1(This,newVal)	\
     ( (This)->lpVtbl -> put_TestProperty1(This,newVal) ) 
 
+#define IPyDispatchExObject_TestMethod2(This,out)	\
+    ( (This)->lpVtbl -> TestMethod2(This,out) ) 
+
 #endif /* COBJMACROS */
 
 
@@ -369,10 +380,20 @@ PyDispatchExObject;
 
 /* Additional Prototypes for ALL interfaces */
 
+unsigned long             __RPC_USER  BSTR_UserSize(     unsigned long *, unsigned long            , BSTR * ); 
+unsigned char * __RPC_USER  BSTR_UserMarshal(  unsigned long *, unsigned char *, BSTR * ); 
+unsigned char * __RPC_USER  BSTR_UserUnmarshal(unsigned long *, unsigned char *, BSTR * ); 
+void                      __RPC_USER  BSTR_UserFree(     unsigned long *, BSTR * ); 
+
 unsigned long             __RPC_USER  VARIANT_UserSize(     unsigned long *, unsigned long            , VARIANT * ); 
 unsigned char * __RPC_USER  VARIANT_UserMarshal(  unsigned long *, unsigned char *, VARIANT * ); 
 unsigned char * __RPC_USER  VARIANT_UserUnmarshal(unsigned long *, unsigned char *, VARIANT * ); 
 void                      __RPC_USER  VARIANT_UserFree(     unsigned long *, VARIANT * ); 
+
+unsigned long             __RPC_USER  BSTR_UserSize64(     unsigned long *, unsigned long            , BSTR * ); 
+unsigned char * __RPC_USER  BSTR_UserMarshal64(  unsigned long *, unsigned char *, BSTR * ); 
+unsigned char * __RPC_USER  BSTR_UserUnmarshal64(unsigned long *, unsigned char *, BSTR * ); 
+void                      __RPC_USER  BSTR_UserFree64(     unsigned long *, BSTR * ); 
 
 unsigned long             __RPC_USER  VARIANT_UserSize64(     unsigned long *, unsigned long            , VARIANT * ); 
 unsigned char * __RPC_USER  VARIANT_UserMarshal64(  unsigned long *, unsigned char *, VARIANT * ); 
