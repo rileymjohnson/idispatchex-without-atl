@@ -52,6 +52,15 @@
     <ClInclude Include="registry_key.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="com_module.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="synchronization.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="module.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="PyDispatchEx.cpp">
