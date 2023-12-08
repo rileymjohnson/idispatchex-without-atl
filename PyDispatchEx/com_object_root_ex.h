@@ -11,7 +11,6 @@ public:
 	typedef ThreadModel _ThreadModel;
 	typedef typename _ThreadModel::AutoCriticalSection _CritSec;
 	typedef typename _ThreadModel::AutoDeleteCriticalSection _AutoDelCritSec;
-	typedef CComObjectLockT<_ThreadModel> ObjectLock;
 
 	~ComObjectRootEx()
 	{
@@ -60,7 +59,6 @@ public:
 	typedef CComSingleThreadModel _ThreadModel;
 	typedef _ThreadModel::AutoCriticalSection _CritSec;
 	typedef _ThreadModel::AutoDeleteCriticalSection _AutoDelCritSec;
-	typedef CComObjectLockT<_ThreadModel> ObjectLock;
 
 	~ComObjectRootEx() {}
 

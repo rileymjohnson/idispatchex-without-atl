@@ -11,13 +11,14 @@
 #include "registry_object.h"
 #include "com_object_root_ex.h"
 #include "com_class_factory.h"
+#include "synchronization.h"
 
 #include "PyDispatchEx_i.h"
 
 using namespace ATL;
 
 class ATL_NO_VTABLE CPyDispatchExObject :
-	public ComObjectRootEx<CComMultiThreadModel>,
+	public ComObjectRootEx<ComMultiThreadModel>,
 	public IPyDispatchExObject,
 	public ISupportErrorInfo
 {

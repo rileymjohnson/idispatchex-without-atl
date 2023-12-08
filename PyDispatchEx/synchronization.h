@@ -128,3 +128,37 @@ public:
 		return S_OK;
 	}
 };
+
+class ComMultiThreadModelNoCS
+{
+public:
+	static ULONG WINAPI Increment(_Inout_ LPLONG p) throw()
+	{
+		return ::InterlockedIncrement(p);
+	}
+	static ULONG WINAPI Decrement(_Inout_ LPLONG p) throw()
+	{
+		return ::InterlockedDecrement(p);
+	}
+	typedef ComFakeCriticalSection AutoCriticalSection;
+	typedef ComFakeCriticalSection AutoDeleteCriticalSection;
+	typedef ComFakeCriticalSection CriticalSection;
+	typedef ComMultiThreadModelNoCS ThreadModelNoCS;
+};
+
+class ComMultiThreadModel
+{
+public:
+	static ULONG WINAPI Increment(_Inout_ LPLONG p) throw()
+	{
+		return ::InterlockedIncrement(p);
+	}
+	static ULONG WINAPI Decrement(_Inout_ LPLONG p) throw()
+	{
+		return ::InterlockedDecrement(p);
+	}
+	typedef ComAutoCriticalSection AutoCriticalSection;
+	typedef ComAutoDeleteCriticalSection AutoDeleteCriticalSection;
+	typedef ComCriticalSection CriticalSection;
+	typedef ComMultiThreadModelNoCS ThreadModelNoCS;
+};

@@ -1,12 +1,13 @@
 #pragma once
 #include "pch.h"
 #include "com_object_root_ex.h"
+#include "synchronization.h"
 
 using namespace ATL;
 
 class ComClassFactory :
 	public IClassFactory,
-	public ComObjectRootEx<CComMultiThreadModel>
+	public ComObjectRootEx<ComMultiThreadModel>
 {
 public:
 	HRESULT _InternalQueryInterface( _In_ REFIID iid, _COM_Outptr_ void** ppvObject) throw()
