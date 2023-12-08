@@ -23,7 +23,6 @@ interface IPyDispatchExObject : IDispatchEx
 	[id(1), helpstring("TestMethod1 help string"), helpcontext(1)] HRESULT TestMethod1([in] VARIANT one, [in] VARIANT two, [in] VARIANT three, [in] VARIANT four, [in] VARIANT five, [out, retval] VARIANT* out_value);
 	[propget, id(2), helpstring("TestProperty1 help string"), helpcontext(2)] HRESULT TestProperty1([out, retval] VARIANT* pVal);
 	[propput, id(2), helpstring("TestProperty1 help string"), helpcontext(2)] HRESULT TestProperty1([in] VARIANT newVal);
-	[id(3), helpstring("TestMethod2 help string")] HRESULT TestMethod2([out, retval] BSTR* out);
 };
 [
 	uuid(fe3f3474-e93a-4f8b-b2ee-fb03359e6c04),

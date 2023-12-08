@@ -9,20 +9,19 @@
 #include <string>
 
 #include "registry_object.h"
-#include "utils.h"
+#include "com_object_root_ex.h"
+#include "com_class_factory.h"
 
 #include "PyDispatchEx_i.h"
 
 using namespace ATL;
 
 class ATL_NO_VTABLE CPyDispatchExObject :
-	public CComObjectRootEx<CComMultiThreadModel>,
-	public CComCoClass<CPyDispatchExObject, &CLSID_PyDispatchExObject>,
+	public ComObjectRootEx<CComMultiThreadModel>,
 	public IPyDispatchExObject,
 	public ISupportErrorInfo
 {
 	const int STARTING_DYNAMIC_DISPID = 1000;
-	enum class member_type { property, method };
 	struct member_entry
 	{
 		std::wstring name;
@@ -48,29 +47,21 @@ public:
 	{
 		RegObject ro;
 		HRESULT hr = ro.FinalConstruct();
-		if (FAILED(hr))
-		{
-			return hr;
-		}
+		if (FAILED(hr)) return hr;
 
 		hr = ATL::_pAtlModule->AddCommonRGSReplacements(&ro);
-		if (FAILED(hr))
-			return hr;
+		if (FAILED(hr)) return hr;
 
 		const wchar_t* module_name = wil::GetModuleFileNameW(wil::GetModuleInstanceHandle()).get();
-		const wchar_t* module_name_unquoted2 = escape_single_quote(module_name).c_str();
 
 		OLECHAR module_name_unquoted[_MAX_PATH * 2];
 		ATL::CAtlModule::EscapeSingleQuote(module_name_unquoted, _countof(module_name_unquoted), module_name);
 
 		winrt::hresult hRes = ro.AddReplacement(L"Module", module_name_unquoted);
-
-		if (FAILED(hRes))
-			return hRes;
+		if (FAILED(hr)) return hr;
 
 		hRes = ro.AddReplacement(L"Module_Raw", module_name_unquoted);
-		if (FAILED(hRes))
-			return hRes;
+		if (FAILED(hr)) return hr;
 
 		if (bRegister)
 		{
@@ -80,34 +71,30 @@ public:
 		return ro.ResourceUnregister(module_name, IDR_PYDISPATCHEXOBJECT, L"REGISTRY");
 	}
 
-	typedef ATL::CComCreator2< ATL::CComCreator< ATL::CComObject< CPyDispatchExObject > >, ATL::CComFailCreator<CLASS_E_NOAGGREGATION> > _CreatorClass;
+	typedef CComCreator2<CComCreator<CComObject<CPyDispatchExObject>>, CComFailCreator<CLASS_E_NOAGGREGATION>> _CreatorClass;
+	typedef CComCreator<CComObjectCached<ComClassFactory>> _ClassFactoryCreatorClass;
 
-	typedef CPyDispatchExObject _ComMapClass;
-	static HRESULT WINAPI _Cache(_In_ void* pv, _In_ REFIID iid, _COM_Outptr_result_maybenull_ void** ppvObject, _In_ DWORD_PTR dw) throw()
+	static const CLSID& WINAPI GetObjectCLSID()
 	{
-		_ComMapClass* p = (_ComMapClass*)pv;
-		p->Lock();
-		HRESULT hRes = E_FAIL;
-		__try
-		{
-			hRes = ATL::CComObjectRootBase::_Cache(pv, iid, ppvObject, dw);
-		}
-		__finally
-		{
-			p->Unlock();
-		}
+		return CLSID_PyDispatchExObject;
+	}
+	static LPCTSTR WINAPI GetObjectDescription()
+	{
+		return NULL;
+	}
+	template <class Q>
+	static HRESULT CreateInstance(
+		_Inout_opt_ IUnknown* punkOuter,
+		_COM_Outptr_ Q** pp)
+	{
+		return _CreatorClass::CreateInstance(punkOuter, __uuidof(Q), (void**)pp);
+	}
+	template <class Q>
+	static HRESULT CreateInstance(_COM_Outptr_ Q** pp)
+	{
+		return _CreatorClass::CreateInstance(NULL, __uuidof(Q), (void**)pp);
+	}
 
-		return hRes;
-	}
-	IUnknown* _GetRawUnknown() throw()
-	{
-		ATLASSERT(_GetEntries()[0].pFunc == _ATL_SIMPLEMAPENTRY);
-		return (IUnknown*)((INT_PTR)this+_GetEntries()->dw);
-	}
-	IUnknown* GetUnknown() throw()
-	{
-		return _GetRawUnknown();
-	}
 	HRESULT _InternalQueryInterface( _In_ REFIID iid, _COM_Outptr_ void** ppvObject) throw()
 	{
 		return this->InternalQueryInterface(this, _GetEntries(), iid, ppvObject);
@@ -115,11 +102,10 @@ public:
 	const static ATL::_ATL_INTMAP_ENTRY* WINAPI _GetEntries() throw() {
 		static const ATL::_ATL_INTMAP_ENTRY _entries[] = {
 			{NULL, (DWORD_PTR)_T("CPyDispatchExObject"), (ATL::_ATL_CREATORARGFUNC*)0},
-			{&_ATL_IIDOF(IPyDispatchExObject), offsetofclass(IPyDispatchExObject, _ComMapClass), _ATL_SIMPLEMAPENTRY},
-			{&_ATL_IIDOF(IDispatch), offsetofclass(IDispatch, _ComMapClass), _ATL_SIMPLEMAPENTRY},
-			{&_ATL_IIDOF(IDispatchEx), offsetofclass(IDispatchEx, _ComMapClass), _ATL_SIMPLEMAPENTRY},
-			{&_ATL_IIDOF(ISupportErrorInfo), offsetofclass(ISupportErrorInfo, _ComMapClass), _ATL_SIMPLEMAPENTRY},
-			__if_exists(_GetAttrEntries) {{NULL, (DWORD_PTR)_GetAttrEntries, _ChainAttr }, }
+			{&__uuidof(IPyDispatchExObject), ((DWORD_PTR)(static_cast<IPyDispatchExObject*>((CPyDispatchExObject*)8))-8), ((ATL::_ATL_CREATORARGFUNC*)1)},
+			{&__uuidof(IDispatch), ((DWORD_PTR)(static_cast<IDispatch*>((CPyDispatchExObject*)8))-8), ((ATL::_ATL_CREATORARGFUNC*)1)},
+			{&__uuidof(IDispatchEx), ((DWORD_PTR)(static_cast<IDispatchEx*>((CPyDispatchExObject*)8))-8), ((ATL::_ATL_CREATORARGFUNC*)1)},
+			{&__uuidof(ISupportErrorInfo), ((DWORD_PTR)(static_cast<ISupportErrorInfo*>((CPyDispatchExObject*)8))-8), ((ATL::_ATL_CREATORARGFUNC*)1)},
 			{NULL, 0, 0}
 		};
 
@@ -199,21 +185,20 @@ public:
 	STDMETHOD(TestMethod1)(VARIANT one, VARIANT two, VARIANT three, VARIANT four, VARIANT five, VARIANT* out_value) override;
 	STDMETHOD(get_TestProperty1)(VARIANT* pVal) override;
 	STDMETHOD(put_TestProperty1)(VARIANT newVal) override;
-	STDMETHOD(TestMethod2)(BSTR* out);
 };
 
-__declspec(selectany) ATL::_ATL_OBJMAP_CACHE __objCache__CPyDispatchExObject = { NULL, 0 };
+__declspec(selectany) ATL::_ATL_OBJMAP_CACHE object_cache = { nullptr, 0 };
 
-const ATL::_ATL_OBJMAP_ENTRY_EX __objMap_CPyDispatchExObject = {
+constexpr ATL::_ATL_OBJMAP_ENTRY_EX object_map = {
 	&__uuidof(PyDispatchExObject),
 	CPyDispatchExObject::UpdateRegistry,
 	CPyDispatchExObject::_ClassFactoryCreatorClass::CreateInstance,
 	CPyDispatchExObject::_CreatorClass::CreateInstance,
-	&__objCache__CPyDispatchExObject,
+	&object_cache,
 	CPyDispatchExObject::GetObjectDescription,
 	CPyDispatchExObject::GetCategoryMap,
 	CPyDispatchExObject::ObjectMain
 };
 
-extern "C" __declspec(allocate("ATL$__m")) __declspec(selectany) const ATL::_ATL_OBJMAP_ENTRY_EX* const __pobjMap_CPyDispatchExObject = &__objMap_CPyDispatchExObject;
-__pragma(comment(linker, "/include:__pobjMap_" "CPyDispatchExObject"));
+extern "C" __declspec(allocate("ATL$__m")) __declspec(selectany) const ATL::_ATL_OBJMAP_ENTRY_EX* const __pobjMap_CPyDispatchExObject = &object_map;
+__pragma(comment(linker, "/include:__pobjMap_CPyDispatchExObject"));

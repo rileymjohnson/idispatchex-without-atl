@@ -46,11 +46,11 @@
 
 #include "PyDispatchEx_i.h"
 
-#define TYPE_FORMAT_STRING_SIZE   1205                              
-#define PROC_FORMAT_STRING_SIZE   183                               
+#define TYPE_FORMAT_STRING_SIZE   1187                              
+#define PROC_FORMAT_STRING_SIZE   145                               
 #define EXPR_FORMAT_STRING_SIZE   1                                 
 #define TRANSMIT_AS_TABLE_SIZE    0            
-#define WIRE_MARSHAL_TABLE_SIZE   2            
+#define WIRE_MARSHAL_TABLE_SIZE   1            
 
 typedef struct _PyDispatchEx_MIDL_TYPE_FORMAT_STRING
     {
@@ -283,37 +283,6 @@ static const PyDispatchEx_MIDL_PROC_FORMAT_STRING PyDispatchEx__MIDL_ProcFormatS
 /* 138 */	NdrFcShort( 0x70 ),	/* Flags:  out, return, base type, */
 /* 140 */	NdrFcShort( 0x10 ),	/* X64 Stack size/offset = 16 */
 /* 142 */	0x8,		/* FC_LONG */
-			0x0,		/* 0 */
-
-	/* Procedure TestMethod2 */
-
-/* 144 */	0x33,		/* FC_AUTO_HANDLE */
-			0x6c,		/* Old Flags:  object, Oi2 */
-/* 146 */	NdrFcLong( 0x0 ),	/* 0 */
-/* 150 */	NdrFcShort( 0x12 ),	/* 18 */
-/* 152 */	NdrFcShort( 0x18 ),	/* X64 Stack size/offset = 24 */
-/* 154 */	NdrFcShort( 0x0 ),	/* 0 */
-/* 156 */	NdrFcShort( 0x8 ),	/* 8 */
-/* 158 */	0x45,		/* Oi2 Flags:  srv must size, has return, has ext, */
-			0x2,		/* 2 */
-/* 160 */	0xa,		/* 10 */
-			0x43,		/* Ext Flags:  new corr desc, clt corr check, has range on conformance */
-/* 162 */	NdrFcShort( 0x1 ),	/* 1 */
-/* 164 */	NdrFcShort( 0x0 ),	/* 0 */
-/* 166 */	NdrFcShort( 0x0 ),	/* 0 */
-/* 168 */	NdrFcShort( 0x0 ),	/* 0 */
-
-	/* Parameter out */
-
-/* 170 */	NdrFcShort( 0x2113 ),	/* Flags:  must size, must free, out, simple ref, srv alloc size=8 */
-/* 172 */	NdrFcShort( 0x8 ),	/* X64 Stack size/offset = 8 */
-/* 174 */	NdrFcShort( 0x4aa ),	/* Type Offset=1194 */
-
-	/* Return value */
-
-/* 176 */	NdrFcShort( 0x70 ),	/* Flags:  out, return, base type, */
-/* 178 */	NdrFcShort( 0x10 ),	/* X64 Stack size/offset = 16 */
-/* 180 */	0x8,		/* FC_LONG */
 			0x0,		/* 0 */
 
 			0x0
@@ -1037,25 +1006,12 @@ static const PyDispatchEx_MIDL_TYPE_FORMAT_STRING PyDispatchEx__MIDL_TypeFormatS
 /* 1180 */	NdrFcShort( 0x18 ),	/* 24 */
 /* 1182 */	NdrFcShort( 0x0 ),	/* 0 */
 /* 1184 */	NdrFcShort( 0xfff4 ),	/* Offset= -12 (1172) */
-/* 1186 */	
-			0x11, 0x4,	/* FC_RP [alloced_on_stack] */
-/* 1188 */	NdrFcShort( 0x6 ),	/* Offset= 6 (1194) */
-/* 1190 */	
-			0x13, 0x0,	/* FC_OP */
-/* 1192 */	NdrFcShort( 0xfcb6 ),	/* Offset= -842 (350) */
-/* 1194 */	0xb4,		/* FC_USER_MARSHAL */
-			0x83,		/* 131 */
-/* 1196 */	NdrFcShort( 0x1 ),	/* 1 */
-/* 1198 */	NdrFcShort( 0x8 ),	/* 8 */
-/* 1200 */	NdrFcShort( 0x0 ),	/* 0 */
-/* 1202 */	NdrFcShort( 0xfff4 ),	/* Offset= -12 (1190) */
 
 			0x0
         }
     };
 
 XFG_TRAMPOLINES(VARIANT)
-XFG_TRAMPOLINES(BSTR)
 
 static const USER_MARSHAL_ROUTINE_QUADRUPLE UserMarshalRoutines[ WIRE_MARSHAL_TABLE_SIZE ] = 
         {
@@ -1065,14 +1021,6 @@ static const USER_MARSHAL_ROUTINE_QUADRUPLE UserMarshalRoutines[ WIRE_MARSHAL_TA
             ,(USER_MARSHAL_MARSHALLING_ROUTINE)XFG_TRAMPOLINE_FPTR(VARIANT_UserMarshal)
             ,(USER_MARSHAL_UNMARSHALLING_ROUTINE)XFG_TRAMPOLINE_FPTR(VARIANT_UserUnmarshal)
             ,(USER_MARSHAL_FREEING_ROUTINE)XFG_TRAMPOLINE_FPTR(VARIANT_UserFree)
-            
-            }
-            ,
-            {
-            (USER_MARSHAL_SIZING_ROUTINE)XFG_TRAMPOLINE_FPTR(BSTR_UserSize)
-            ,(USER_MARSHAL_MARSHALLING_ROUTINE)XFG_TRAMPOLINE_FPTR(BSTR_UserMarshal)
-            ,(USER_MARSHAL_UNMARSHALLING_ROUTINE)XFG_TRAMPOLINE_FPTR(BSTR_UserUnmarshal)
-            ,(USER_MARSHAL_FREEING_ROUTINE)XFG_TRAMPOLINE_FPTR(BSTR_UserFree)
             
             }
             
@@ -1117,8 +1065,7 @@ static const unsigned short IPyDispatchExObject_FormatStringOffsetTable[] =
     (unsigned short) -1,
     0,
     68,
-    106,
-    144
+    106
     };
 
 
@@ -1160,36 +1107,6 @@ extern const USER_MARSHAL_ROUTINE_QUADRUPLE NDR64_UserMarshalRoutines[ WIRE_MARS
 namespace {
 #endif
 
-
-typedef 
-NDR64_FORMAT_CHAR
-__midl_frag180_t;
-extern const __midl_frag180_t __midl_frag180;
-
-typedef 
-struct _NDR64_POINTER_FORMAT
-__midl_frag179_t;
-extern const __midl_frag179_t __midl_frag179;
-
-typedef 
-struct _NDR64_USER_MARSHAL_FORMAT
-__midl_frag178_t;
-extern const __midl_frag178_t __midl_frag178;
-
-typedef 
-struct _NDR64_POINTER_FORMAT
-__midl_frag177_t;
-extern const __midl_frag177_t __midl_frag177;
-
-typedef 
-struct 
-{
-    struct _NDR64_PROC_FORMAT frag1;
-    struct _NDR64_PARAM_FORMAT frag2;
-    struct _NDR64_PARAM_FORMAT frag3;
-}
-__midl_frag176_t;
-extern const __midl_frag176_t __midl_frag176;
 
 typedef 
 NDR64_FORMAT_CHAR
@@ -2094,104 +2011,6 @@ typedef
 NDR64_FORMAT_UINT32
 __midl_frag1_t;
 extern const __midl_frag1_t __midl_frag1;
-
-static const __midl_frag180_t __midl_frag180 =
-0x5    /* FC64_INT32 */;
-
-static const __midl_frag179_t __midl_frag179 =
-{ 
-/* *FLAGGED_WORD_BLOB */
-    0x22,    /* FC64_OP */
-    (NDR64_UINT8) 0 /* 0x0 */,
-    (NDR64_UINT16) 0 /* 0x0 */,
-    &__midl_frag20
-};
-
-static const __midl_frag178_t __midl_frag178 =
-{ 
-/* wireBSTR */
-    0xa2,    /* FC64_USER_MARSHAL */
-    (NDR64_UINT8) 128 /* 0x80 */,
-    (NDR64_UINT16) 1 /* 0x1 */,
-    (NDR64_UINT16) 7 /* 0x7 */,
-    (NDR64_UINT16) 8 /* 0x8 */,
-    (NDR64_UINT32) 8 /* 0x8 */,
-    (NDR64_UINT32) 0 /* 0x0 */,
-    &__midl_frag179
-};
-
-static const __midl_frag177_t __midl_frag177 =
-{ 
-/* *wireBSTR */
-    0x20,    /* FC64_RP */
-    (NDR64_UINT8) 4 /* 0x4 */,
-    (NDR64_UINT16) 0 /* 0x0 */,
-    &__midl_frag178
-};
-
-static const __midl_frag176_t __midl_frag176 =
-{ 
-/* TestMethod2 */
-    { 
-    /* TestMethod2 */      /* procedure TestMethod2 */
-        (NDR64_UINT32) 4849987 /* 0x4a0143 */,    /* auto handle */ /* IsIntrepreted, [object], ServerMustSize, HasReturn, ClientCorrelation */
-        (NDR64_UINT32) 24 /* 0x18 */ ,  /* Stack size */
-        (NDR64_UINT32) 0 /* 0x0 */,
-        (NDR64_UINT32) 8 /* 0x8 */,
-        (NDR64_UINT16) 0 /* 0x0 */,
-        (NDR64_UINT16) 0 /* 0x0 */,
-        (NDR64_UINT16) 2 /* 0x2 */,
-        (NDR64_UINT16) 0 /* 0x0 */
-    },
-    { 
-    /* out */      /* parameter out */
-        &__midl_frag178,
-        { 
-        /* out */
-            1,
-            1,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            (NDR64_UINT16) 0 /* 0x0 */,
-            1
-        },    /* MustSize, MustFree, [out], SimpleRef, UseCache */
-        (NDR64_UINT16) 0 /* 0x0 */,
-        8 /* 0x8 */,   /* Stack offset */
-    },
-    { 
-    /* HRESULT */      /* parameter HRESULT */
-        &__midl_frag180,
-        { 
-        /* HRESULT */
-            0,
-            0,
-            0,
-            0,
-            1,
-            1,
-            1,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            (NDR64_UINT16) 0 /* 0x0 */,
-            0
-        },    /* [out], IsReturn, Basetype, ByValue */
-        (NDR64_UINT16) 0 /* 0x0 */,
-        16 /* 0x10 */,   /* Stack offset */
-    }
-};
 
 static const __midl_frag175_t __midl_frag175 =
 0x5    /* FC64_INT32 */;
@@ -4892,7 +4711,6 @@ static const __midl_frag1_t __midl_frag1 =
 
 
 XFG_TRAMPOLINES64(VARIANT)
-XFG_TRAMPOLINES64(BSTR)
 
 static const USER_MARSHAL_ROUTINE_QUADRUPLE NDR64_UserMarshalRoutines[ WIRE_MARSHAL_TABLE_SIZE ] = 
         {
@@ -4902,14 +4720,6 @@ static const USER_MARSHAL_ROUTINE_QUADRUPLE NDR64_UserMarshalRoutines[ WIRE_MARS
             ,(USER_MARSHAL_MARSHALLING_ROUTINE)XFG_TRAMPOLINE_FPTR(VARIANT_UserMarshal64)
             ,(USER_MARSHAL_UNMARSHALLING_ROUTINE)XFG_TRAMPOLINE_FPTR(VARIANT_UserUnmarshal64)
             ,(USER_MARSHAL_FREEING_ROUTINE)XFG_TRAMPOLINE_FPTR(VARIANT_UserFree64)
-            
-            }
-            ,
-            {
-            (USER_MARSHAL_SIZING_ROUTINE)XFG_TRAMPOLINE_FPTR(BSTR_UserSize64)
-            ,(USER_MARSHAL_MARSHALLING_ROUTINE)XFG_TRAMPOLINE_FPTR(BSTR_UserMarshal64)
-            ,(USER_MARSHAL_UNMARSHALLING_ROUTINE)XFG_TRAMPOLINE_FPTR(BSTR_UserUnmarshal64)
-            ,(USER_MARSHAL_FREEING_ROUTINE)XFG_TRAMPOLINE_FPTR(BSTR_UserFree64)
             
             }
             
@@ -4954,8 +4764,7 @@ static const FormatInfoRef IPyDispatchExObject_Ndr64ProcTable[] =
     (FormatInfoRef)(LONG_PTR) -1,
     &__midl_frag2,
     &__midl_frag166,
-    &__midl_frag171,
-    &__midl_frag176
+    &__midl_frag171
     };
 
 
@@ -5006,7 +4815,7 @@ static const MIDL_SERVER_INFO IPyDispatchExObject_ServerInfo =
     2,
     (MIDL_SYNTAX_INFO*)IPyDispatchExObject_SyntaxInfo
     };
-CINTERFACE_PROXY_VTABLE(19) _IPyDispatchExObjectProxyVtbl = 
+CINTERFACE_PROXY_VTABLE(18) _IPyDispatchExObjectProxyVtbl = 
 {
     &IPyDispatchExObject_ProxyInfo,
     &IID_IPyDispatchExObject,
@@ -5027,8 +4836,7 @@ CINTERFACE_PROXY_VTABLE(19) _IPyDispatchExObjectProxyVtbl =
     0 /* IDispatchEx::GetNameSpaceParent */ ,
     (void *) (INT_PTR) -1 /* IPyDispatchExObject::TestMethod1 */ ,
     (void *) (INT_PTR) -1 /* IPyDispatchExObject::get_TestProperty1 */ ,
-    (void *) (INT_PTR) -1 /* IPyDispatchExObject::put_TestProperty1 */ ,
-    (void *) (INT_PTR) -1 /* IPyDispatchExObject::TestMethod2 */
+    (void *) (INT_PTR) -1 /* IPyDispatchExObject::put_TestProperty1 */
 };
 
 
@@ -5048,7 +4856,6 @@ EXTERN_C DECLSPEC_SELECTANY const PRPC_STUB_FUNCTION IPyDispatchExObject_table[]
     STUB_FORWARDING_FUNCTION,
     NdrStubCall3,
     NdrStubCall3,
-    NdrStubCall3,
     NdrStubCall3
 };
 
@@ -5056,7 +4863,7 @@ CInterfaceStubVtbl _IPyDispatchExObjectStubVtbl =
 {
     &IID_IPyDispatchExObject,
     &IPyDispatchExObject_ServerInfo,
-    19,
+    18,
     &IPyDispatchExObject_table[-3],
     CStdStubBuffer_DELEGATING_METHODS
 };

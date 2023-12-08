@@ -381,9 +381,3 @@ STDMETHODIMP CPyDispatchExObject::put_TestProperty1(VARIANT newVal)
 	return S_OK;
 }
 
-STDMETHODIMP CPyDispatchExObject::TestMethod2(BSTR* out)
-{
-	*out = ::SysAllocString(L"TestMethod2 out");
-
-	return S_OK;
-}
