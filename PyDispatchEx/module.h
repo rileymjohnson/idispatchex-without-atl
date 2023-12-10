@@ -21,6 +21,59 @@ struct ATL_MODULE
 	ComCriticalSection m_csStaticDataInitAndTypeInfo;
 };
 
+ATLINLINE ATLAPI ModuleAddTermFunc(
+	_Inout_ ATL_MODULE* pModule,
+	_In_ ATL_TERMFUNC* pFunc,
+	_In_ DWORD_PTR dw)
+{
+	if (pModule == NULL)
+		return E_INVALIDARG;
+
+	HRESULT hr = S_OK;
+	ATL_TERMFUNC_ELEM* pNew = _ATL_NEW ATL_TERMFUNC_ELEM;
+	if (pNew == NULL)
+		hr = E_OUTOFMEMORY;
+	else
+	{
+		pNew->pFunc = pFunc;
+		pNew->dw = dw;
+		ComCritSecLock lock(pModule->m_csStaticDataInitAndTypeInfo, false);
+		hr = lock.Lock();
+		if (SUCCEEDED(hr))
+		{
+			pNew->pNext = pModule->m_pTermFuncs;
+			pModule->m_pTermFuncs = pNew;
+		}
+		else
+		{
+			delete pNew;
+			ATLASSERT(0);
+		}
+	}
+	return hr;
+}
+
+ATLINLINE ATLAPI_(void) CallTermFunc(_Inout_ ATL_MODULE* pModule)
+{
+	if (pModule == NULL)
+		_AtlRaiseException((DWORD)EXCEPTION_ACCESS_VIOLATION);
+
+	ATL_TERMFUNC_ELEM* pElem = pModule->m_pTermFuncs;
+	ATL_TERMFUNC_ELEM* pNext = NULL;
+	while (pElem != NULL)
+	{
+		pElem->pFunc(pElem->dw);
+		pNext = pElem->pNext;
+		delete pElem;
+		pElem = pNext;
+	}
+	pModule->m_pTermFuncs = NULL;
+}
+
+
+class AtlModule;
+__declspec(selectany) AtlModule* winrt_module = NULL;
+
 class ATL_NO_VTABLE AtlModule :
 public ATL_MODULE
 {
@@ -32,18 +85,18 @@ public:
 	{
 		// Should have only one instance of a class
 		// derived from AtlModule in a project.
-		ATLASSERT(_pAtlModule == NULL);
+		WINRT_ASSERT(winrt_module == NULL);
 		cbSize = 0;
 		m_pTermFuncs = NULL;
 
 		m_nLockCnt = 0;
-		_pAtlModule = this;
+		winrt_module = this;
 		m_pGIT = NULL;
 
 		if (FAILED(m_csStaticDataInitAndTypeInfo.Init()))
 		{
 			ATLTRACE(atlTraceGeneral, 0, _T("ERROR : Unable to initialize critical section in AtlModule\n"));
-			ATLASSERT(0);
+			WINRT_ASSERT(0);
 			CAtlBaseModule::m_bInitFailed = true;
 			return;
 		}
@@ -61,7 +114,7 @@ public:
 		// Call term functions
 		if (m_pTermFuncs != NULL)
 		{
-			AtlCallTermFunc(this);
+			CallTermFunc(this);
 			m_pTermFuncs = NULL;
 		}
 
@@ -97,12 +150,12 @@ public:
 		_In_ _ATL_TERMFUNC* pFunc,
 		_In_ DWORD_PTR dw) throw()
 	{
-		return AtlModuleAddTermFunc(this, pFunc, dw);
+		return ModuleAddTermFunc(this, pFunc, dw);
 	}
 
 	virtual HRESULT GetGITPtr(_Outptr_ IGlobalInterfaceTable** ppGIT) throw()
 	{
-		ATLASSERT(ppGIT != NULL);
+		WINRT_ASSERT(ppGIT != NULL);
 
 		if (ppGIT == NULL)
 			return E_POINTER;
@@ -116,7 +169,7 @@ public:
 
 		if (SUCCEEDED(hr))
 		{
-			ATLASSUME(m_pGIT != NULL);
+			WINRT_ASSERT(m_pGIT != NULL);
 			*ppGIT = m_pGIT;
 			m_pGIT->AddRef();
 		}

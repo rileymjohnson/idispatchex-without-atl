@@ -74,7 +74,7 @@ public:
 
 	HRESULT Init() throw()
 	{
-		ATLASSERT(!m_bInitialized);
+		WINRT_ASSERT(!m_bInitialized);
 		const HRESULT hr = ComCriticalSection::Init();
 		if (SUCCEEDED(hr))
 		{
@@ -95,7 +95,7 @@ public:
 
 	HRESULT Lock()
 	{
-		ATLASSUME(m_bInitialized);
+		WINRT_ASSERT(m_bInitialized);
 		return ComCriticalSection::Lock();
 	}
 
@@ -162,3 +162,56 @@ public:
 	typedef ComCriticalSection CriticalSection;
 	typedef ComMultiThreadModelNoCS ThreadModelNoCS;
 };
+
+template< class TLock >
+class ComCritSecLock
+{
+public:
+		ComCritSecLock(TLock& cs, bool bInitialLock = true) :
+			m_cs(cs),
+			m_bLocked(false)
+		{
+			if (bInitialLock)
+			{
+				HRESULT hr;
+
+				hr = Lock();
+				if (FAILED(hr))
+				{
+					AtlThrow(hr);
+				}
+			}
+		}
+		~ComCritSecLock() throw()
+		{
+			if (m_bLocked)
+			{
+				Unlock();
+			}
+		}
+		HRESULT Lock() throw()
+		{
+			HRESULT hr;
+
+			ATLASSERT(!m_bLocked);
+			ATLASSUME(!m_bLocked);
+			hr = m_cs.Lock();
+			if (FAILED(hr))
+			{
+				return(hr);
+			}
+			m_bLocked = true;
+
+			return(S_OK);
+		}
+		void Unlock() throw()
+		{
+			ATLASSUME(m_bLocked);
+			m_cs.Unlock();
+			m_bLocked = false;
+		}
+private:
+	TLock& m_cs;
+	bool m_bLocked;
+};
+

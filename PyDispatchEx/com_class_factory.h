@@ -7,7 +7,7 @@ using namespace ATL;
 
 class ComClassFactory :
 	public IClassFactory,
-	public ComObjectRootEx<ComMultiThreadModel>
+	public ComObjectRootEx
 {
 public:
 	HRESULT _InternalQueryInterface( _In_ REFIID iid, _COM_Outptr_ void** ppvObject) throw()
@@ -38,14 +38,14 @@ public:
 		_In_ REFIID riid,
 		_COM_Outptr_ void** ppvObj)
 	{
-		ATLASSUME(m_pfnCreateInstance != NULL);
+		WINRT_ASSERT(m_pfnCreateInstance != NULL);
 		HRESULT hRes = E_POINTER;
 		if (ppvObj != NULL)
 		{
 			*ppvObj = NULL;
 			// can't ask for anything other than IUnknown when aggregating
 
-			if ((pUnkOuter != NULL) && !InlineIsEqualUnknown(riid))
+			if ((pUnkOuter != NULL) && !winrt::Windows::Foundation::GuidHelper::Equals(riid, IID_IUnknown))
 			{
 				hRes = CLASS_E_NOAGGREGATION;
 			}
@@ -58,9 +58,9 @@ public:
 	STDMETHOD(LockServer)(_In_ BOOL fLock)
 	{
 		if (fLock)
-			_pAtlModule->Lock();
+			winrt_module->Lock();
 		else
-			_pAtlModule->Unlock();
+			winrt_module->Unlock();
 		return S_OK;
 	}
 	// helper

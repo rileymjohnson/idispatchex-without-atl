@@ -21,8 +21,8 @@ RegParser::CParseBuffer::~CParseBuffer()
 
 BOOL RegParser::CParseBuffer::Append(const TCHAR* pch, int nChars)
 {
-	ATLASSERT(p != NULL);
-	ATLASSUME(p != NULL);
+	WINRT_ASSERT(p != NULL);
+	WINRT_ASSERT(p != NULL);
 	int newSize = nPos + nChars + 1;
 	if (newSize <= nPos || newSize <= nChars)
 		return FALSE;
@@ -263,7 +263,7 @@ BOOL RegParser::HasSubKeys(HKEY hkey)
 		&cSubKeys, nullptr, nullptr,
 		nullptr, nullptr, nullptr, nullptr, nullptr) != ERROR_SUCCESS)
 	{
-		ATLASSERT(FALSE);
+		WINRT_ASSERT(FALSE);
 		return FALSE;
 	}
 
@@ -280,7 +280,7 @@ BOOL RegParser::HasValues(HKEY hkey)
 		&cValues, &cMaxValueNameLen, nullptr, nullptr, nullptr);
 	if (ERROR_SUCCESS != lResult)
 	{
-		ATLASSERT(FALSE);
+		WINRT_ASSERT(FALSE);
 		return FALSE;
 	}
 
@@ -314,8 +314,8 @@ HRESULT RegParser::SkipAssignment(LPTSTR szToken)
 
 HRESULT RegParser::PreProcessBuffer(LPTSTR lpszReg, LPTSTR* ppszReg)
 {
-	ATLASSERT(lpszReg != NULL);
-	ATLASSERT(ppszReg != NULL);
+	WINRT_ASSERT(lpszReg != NULL);
+	WINRT_ASSERT(ppszReg != NULL);
 
 	if (lpszReg == nullptr || ppszReg == nullptr)
 		return E_POINTER;

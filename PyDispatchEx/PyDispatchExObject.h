@@ -5,20 +5,22 @@
 #include <regex>
 
 #include <vector>
+#include "module.h"
 #include <variant>
 #include <string>
 
 #include "registry_object.h"
 #include "com_object_root_ex.h"
 #include "com_class_factory.h"
-#include "synchronization.h"
+#include "com_object.h"
+#include "com_object_cached.h"
 
 #include "PyDispatchEx_i.h"
 
 using namespace ATL;
 
 class ATL_NO_VTABLE CPyDispatchExObject :
-	public ComObjectRootEx<ComMultiThreadModel>,
+	public ComObjectRootEx,
 	public IPyDispatchExObject,
 	public ISupportErrorInfo
 {
@@ -50,13 +52,13 @@ public:
 		HRESULT hr = ro.FinalConstruct();
 		if (FAILED(hr)) return hr;
 
-		hr = ATL::_pAtlModule->AddCommonRGSReplacements(&ro);
+		hr = winrt_module->AddCommonRGSReplacements(&ro);
 		if (FAILED(hr)) return hr;
 
 		const wchar_t* module_name = wil::GetModuleFileNameW(wil::GetModuleInstanceHandle()).get();
 
 		OLECHAR module_name_unquoted[_MAX_PATH * 2];
-		ATL::CAtlModule::EscapeSingleQuote(module_name_unquoted, _countof(module_name_unquoted), module_name);
+		AtlModule::EscapeSingleQuote(module_name_unquoted, _countof(module_name_unquoted), module_name);
 
 		winrt::hresult hRes = ro.AddReplacement(L"Module", module_name_unquoted);
 		if (FAILED(hr)) return hr;
@@ -72,8 +74,8 @@ public:
 		return ro.ResourceUnregister(module_name, IDR_PYDISPATCHEXOBJECT, L"REGISTRY");
 	}
 
-	typedef CComCreator2<CComCreator<CComObject<CPyDispatchExObject>>, CComFailCreator<CLASS_E_NOAGGREGATION>> _CreatorClass;
-	typedef CComCreator<CComObjectCached<ComClassFactory>> _ClassFactoryCreatorClass;
+	typedef CComCreator2<CComCreator<ComObject<CPyDispatchExObject>>, CComFailCreator<CLASS_E_NOAGGREGATION>> _CreatorClass;
+	typedef CComCreator<ComObjectCached<ComClassFactory>> _ClassFactoryCreatorClass;
 
 	static const CLSID& WINAPI GetObjectCLSID()
 	{

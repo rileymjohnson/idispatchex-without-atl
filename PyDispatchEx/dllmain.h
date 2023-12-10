@@ -2,10 +2,11 @@
 
 #include "registry_object.h"
 #include "com_module.h"
+#include "module.h"
 #include "utils.h"
 
 
-class CPyDispatchExModule : public CAtlModule
+class CPyDispatchExModule : public AtlModule
 {
 public :
 	CPyDispatchExModule()
@@ -62,7 +63,7 @@ public :
 		{
 			if (CAtlBaseModule::m_bInitFailed)
 			{
-				ATLASSERT(0);
+				WINRT_ASSERT(0);
 				return FALSE;
 			}
 		}
@@ -118,7 +119,7 @@ public :
 	}
 	static void InitLibId() throw()
 	{
-		ATL::CAtlModule::m_libid = LIBID_PyDispatchExLib;
+		AtlModule::m_libid = LIBID_PyDispatchExLib;
 	}
 	static LPCOLESTR GetAppId() throw()
 	{
@@ -134,7 +135,7 @@ public :
 		HRESULT hr = ro.FinalConstruct();
 		if (FAILED(hr)) return hr;
 
-		hr = ATL::_pAtlModule->AddCommonRGSReplacements(&ro);
+		hr = winrt_module->AddCommonRGSReplacements(&ro);
 		if (FAILED(hr)) return hr;
 
 		const wchar_t* module_name = wil::GetModuleFileNameW(wil::GetModuleInstanceHandle()).get();

@@ -18,10 +18,10 @@ ATLINLINE ATLAPIINL ComModuleRegisterServer(
 	_In_ BOOL bRegTypeLib,
 	_In_opt_ const CLSID* pCLSID)
 {
-	ATLASSERT(pComModule != NULL);
+	WINRT_ASSERT(pComModule != NULL);
 	if (pComModule == NULL)
 		return E_INVALIDARG;
-	ATLASSERT(pComModule->m_hInstTypeLib != NULL);
+	WINRT_ASSERT(pComModule->m_hInstTypeLib != NULL);
 
 	HRESULT hr = S_OK;
 
@@ -47,7 +47,7 @@ ATLINLINE ATLAPIINL ComModuleRegisterServer(
 
 	if (SUCCEEDED(hr) && bRegTypeLib)
 	{
-		ATLASSUME(pComModule->m_hInstTypeLib != NULL);
+		WINRT_ASSERT(pComModule->m_hInstTypeLib != NULL);
 		hr = AtlRegisterTypeLib(pComModule->m_hInstTypeLib, 0);
 	}
 
@@ -62,7 +62,7 @@ ATLINLINE ATLAPIINL ComModuleUnregisterServer(
 	_In_ BOOL bUnRegTypeLib,
 	_In_opt_ const CLSID* pCLSID)
 {
-	ATLASSERT(pComModule != NULL);
+	WINRT_ASSERT(pComModule != NULL);
 	if (pComModule == NULL)
 		return E_INVALIDARG;
 
@@ -108,7 +108,7 @@ public:
 
 		if (FAILED(m_csObjMap.Init()))
 		{
-			ATLASSERT(0);
+			WINRT_ASSERT(0);
 			CAtlBaseModule::m_bInitFailed = true;
 			return;
 		}
@@ -220,7 +220,7 @@ ATLINLINE ATLAPI ComModuleGetClassObject(
 
 	*ppv = NULL;
 
-	ATLASSERT(pComModule != NULL);
+	WINRT_ASSERT(pComModule != NULL);
 	if (pComModule == NULL)
 	{
 		return E_INVALIDARG;
@@ -249,7 +249,7 @@ ATLINLINE ATLAPI ComModuleGetClassObject(
 					hr = lock.Lock();
 					if (FAILED(hr))
 					{
-						ATLASSERT(FALSE);
+						WINRT_ASSERT(FALSE);
 						break;
 					}
 

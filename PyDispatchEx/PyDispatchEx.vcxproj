@@ -219,6 +219,8 @@
   <ItemGroup>
     <ClInclude Include="com_class_factory.h" />
     <ClInclude Include="com_module.h" />
+    <ClInclude Include="com_object.h" />
+    <ClInclude Include="com_object_cached.h" />
     <ClInclude Include="com_object_root_ex.h" />
     <ClInclude Include="dllmain.h" />
     <ClInclude Include="framework.h" />

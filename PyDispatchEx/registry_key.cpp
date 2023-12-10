@@ -57,7 +57,7 @@ HKEY RegKey::Detach() throw()
 
 void RegKey::Attach(_In_ HKEY hKey) throw()
 {
-	ATLASSUME(m_hKey == NULL);
+	WINRT_ASSERT(m_hKey == NULL);
 	m_hKey = hKey;
 	m_samWOW64 = 0;
 	m_pTM = NULL;
@@ -89,7 +89,7 @@ LSTATUS RegKey::Close() throw()
 
 LSTATUS RegKey::Flush() throw()
 {
-	ATLASSUME(m_hKey != NULL);
+	WINRT_ASSERT(m_hKey != NULL);
 
 	return ::RegFlushKey(m_hKey);
 }
@@ -103,7 +103,7 @@ LSTATUS RegKey::Create(
 	_In_opt_ LPSECURITY_ATTRIBUTES lpSecAttr,
 	_Out_opt_ LPDWORD lpdwDisposition) throw()
 {
-	ATLASSERT(hKeyParent != NULL);
+	WINRT_ASSERT(hKeyParent != NULL);
 	DWORD dw;
 	HKEY hKey = NULL;
 	LONG lRes = m_pTM != NULL ?
@@ -128,7 +128,7 @@ LSTATUS RegKey::Open(
 	_In_opt_z_ LPCTSTR lpszKeyName,
 	_In_ REGSAM samDesired) throw()
 {
-	ATLASSUME(hKeyParent != NULL);
+	WINRT_ASSERT(hKeyParent != NULL);
 	HKEY hKey = NULL;
 	LONG lRes = m_pTM != NULL ?
 		m_pTM->RegOpenKeyEx(hKeyParent, lpszKeyName, 0, samDesired, &hKey) :
@@ -136,7 +136,7 @@ LSTATUS RegKey::Open(
 	if (lRes == ERROR_SUCCESS)
 	{
 		lRes = Close();
-		ATLASSERT(lRes == ERROR_SUCCESS);
+		WINRT_ASSERT(lRes == ERROR_SUCCESS);
 		m_hKey = hKey;
 #if WINVER >= 0x0501
 		m_samWOW64 = samDesired & (KEY_WOW64_32KEY | KEY_WOW64_64KEY);
@@ -151,7 +151,7 @@ LSTATUS WINAPI RegKey::SetValue(
 	_In_opt_z_ LPCTSTR lpszValue,
 	_In_opt_z_ LPCTSTR lpszValueName)
 {
-	ATLASSERT(lpszValue != NULL);
+	WINRT_ASSERT(lpszValue != NULL);
 	RegKey key;
 	LONG lRes = key.Create(hKeyParent, lpszKeyName);
 	if (lRes == ERROR_SUCCESS)
@@ -164,7 +164,7 @@ LSTATUS RegKey::SetKeyValue(
 	_In_opt_z_ LPCTSTR lpszValue,
 	_In_opt_z_ LPCTSTR lpszValueName) throw()
 {
-	ATLASSERT(lpszValue != NULL);
+	WINRT_ASSERT(lpszValue != NULL);
 	RegKey key;
 	LONG lRes = key.Create(m_hKey, lpszKeyName, REG_NONE, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE | m_samWOW64);
 	if (lRes == ERROR_SUCCESS)
@@ -179,7 +179,7 @@ LSTATUS RegKey::SetValue(
 	_In_ int nValueLen)
 {
 	ATLENSURE(lpszValue != NULL);
-	ATLASSUME(m_hKey != NULL);
+	WINRT_ASSERT(m_hKey != NULL);
 
 	if (bMulti && nValueLen == -1)
 		return ERROR_INVALID_PARAMETER;
@@ -199,7 +199,7 @@ LSTATUS RegKey::SetValue(
 	_In_opt_ const void* pValue,
 	_In_ ULONG nBytes) throw()
 {
-	ATLASSUME(m_hKey != NULL);
+	WINRT_ASSERT(m_hKey != NULL);
 	return ::RegSetValueEx(m_hKey, pszValueName, 0, dwType, static_cast<const BYTE*>(pValue), nBytes);
 }
 
