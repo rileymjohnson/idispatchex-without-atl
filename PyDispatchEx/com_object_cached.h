@@ -58,11 +58,11 @@ public:
 			{
 				p->SetVoid(NULL);
 				p->InternalFinalConstructAddRef();
-				hRes = p->_AtlInitialConstruct();
+				hRes = p->_InitialConstruct();
 				if (SUCCEEDED(hRes))
 					hRes = p->FinalConstruct();
 				if (SUCCEEDED(hRes))
-					hRes = p->_AtlFinalConstruct();
+					hRes = p->_FinalConstruct();
 				p->InternalFinalConstructRelease();
 				if (hRes != S_OK)
 				{

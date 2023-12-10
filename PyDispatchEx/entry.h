@@ -1,6 +1,23 @@
 #pragma once
 #include "pch.h"
 
+bool __declspec(selectany) winrt_register_per_user = false;
+
+inline __declspec(nothrow) HRESULT __stdcall WinRTSetPerUserRegistration(_In_ bool bEnable)
+{
+	winrt_register_per_user = bEnable;
+	return S_OK;
+}
+
+inline __declspec(nothrow) HRESULT __stdcall WinRTGetPerUserRegistration(_Out_ bool* pbEnabled)
+{
+	if (pbEnabled == NULL)
+		return E_POINTER;
+
+	*pbEnabled = winrt_register_per_user;
+	return S_OK;
+}
+
 #define CATMAP_ENTRY_END 0
 #define CATMAP_ENTRY_IMPLEMENTED 1
 #define CATMAP_ENTRY_REQUIRED 2
@@ -22,6 +39,11 @@ typedef HRESULT(WINAPI CREATORARGFUNC)(
 	_In_ DWORD_PTR dw);
 typedef LPCTSTR(WINAPI DESCRIPTIONFUNC)();
 typedef const struct CATMAP_ENTRY* (CATMAPFUNC)();
+
+struct CREATORDATA
+{
+	CREATORFUNC* pFunc;
+};
 
 struct CACHEDATA
 {

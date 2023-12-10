@@ -12,6 +12,7 @@
 #include "registry_object.h"
 #include "com_object_root_ex.h"
 #include "com_class_factory.h"
+#include "com_creator.h"
 #include "com_object.h"
 #include "com_object_cached.h"
 #include "entry.h"
@@ -59,7 +60,7 @@ public:
 		const wchar_t* module_name = wil::GetModuleFileNameW(wil::GetModuleInstanceHandle()).get();
 
 		OLECHAR module_name_unquoted[_MAX_PATH * 2];
-		AtlModule::EscapeSingleQuote(module_name_unquoted, _countof(module_name_unquoted), module_name);
+		WinRTModule::EscapeSingleQuote(module_name_unquoted, _countof(module_name_unquoted), module_name);
 
 		winrt::hresult hRes = ro.AddReplacement(L"Module", module_name_unquoted);
 		if (FAILED(hr)) return hr;
@@ -75,8 +76,8 @@ public:
 		return ro.ResourceUnregister(module_name, IDR_PYDISPATCHEXOBJECT, L"REGISTRY");
 	}
 
-	typedef CComCreator2<CComCreator<ComObject<CPyDispatchExObject>>, CComFailCreator<CLASS_E_NOAGGREGATION>> _CreatorClass;
-	typedef CComCreator<ComObjectCached<ComClassFactory>> _ClassFactoryCreatorClass;
+	typedef ComCreator2<ComCreator<ComObject<CPyDispatchExObject>>, ComFailCreator<CLASS_E_NOAGGREGATION>> _CreatorClass;
+	typedef ComCreator<ComObjectCached<ComClassFactory>> _ClassFactoryCreatorClass;
 
 	static const CLSID& WINAPI GetObjectCLSID()
 	{

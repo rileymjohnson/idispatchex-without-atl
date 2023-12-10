@@ -76,6 +76,12 @@
     <ClInclude Include="entry.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="base_module.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="com_creator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="PyDispatchEx.cpp">

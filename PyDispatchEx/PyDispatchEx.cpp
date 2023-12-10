@@ -39,7 +39,7 @@ STDAPI DllInstall(BOOL bInstall, _In_opt_  LPCWSTR pszCmdLine)
 	{
 		if (_wcsnicmp(pszCmdLine, szUserSwitch, _countof(szUserSwitch)) == 0)
 		{
-			ATL::AtlSetPerUserRegistration(true);
+			WinRTSetPerUserRegistration(true);
 		}
 	}
 

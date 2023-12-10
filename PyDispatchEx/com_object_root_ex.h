@@ -4,7 +4,7 @@
 
 using namespace ATL;
 
-ATLINLINE ATLAPI WinRTInternalQueryInterface(
+inline __declspec(nothrow) HRESULT __stdcall WinRTInternalQueryInterface(
 	_Inout_ void* pThis,
 	_In_ const INTMAP_ENTRY* pEntries,
 	_In_ REFIID iid,
@@ -85,7 +85,7 @@ public:
 	}
 	// For library initialization only
 	_Post_satisfies_(return <= 0)   // Ensure callers handle error cases, but S_OK is only success status supported
-		HRESULT _AtlFinalConstruct()
+		HRESULT _FinalConstruct()
 	{
 		return S_OK;
 	}
@@ -120,22 +120,11 @@ public:
 		_In_ REFIID iid,
 		_COM_Outptr_ void** ppvObject)
 	{
-		// Only Assert here. WinRTInternalQueryInterface will return the correct HRESULT if ppvObject == NULL
-#ifndef _ATL_OLEDB_CONFORMANCE_TESTS
 		WINRT_ASSERT(ppvObject != NULL);
-#endif
 		WINRT_ASSERT(pThis != NULL);
-		// First entry in the com map should be a simple map entry
 		WINRT_ASSERT(pEntries->pFunc == _ATL_SIMPLEMAPENTRY);
-#if defined(_ATL_DEBUG_INTERFACES) || defined(_ATL_DEBUG_QI)
-		LPCTSTR pszClassName = (LPCTSTR)pEntries[-1].dw;
-		(pszClassName);
-#endif // _ATL_DEBUG_INTERFACES
 		HRESULT hRes = WinRTInternalQueryInterface(pThis, pEntries, iid, ppvObject);
-#if defined(_ATL_DEBUG_INTERFACES) && !defined(_ATL_STATIC_LIB_IMPL)
-		_AtlDebugInterfacesModule.AddThunk((IUnknown**)ppvObject, pszClassName, iid);
-#endif // _ATL_DEBUG_INTERFACES
-		return _ATLDUMPIID(iid, pszClassName, hRes);
+		return hRes;
 	}
 
 	//Outer funcs
@@ -162,12 +151,11 @@ public:
 	}
 	void InternalFinalConstructRelease()
 	{
-		ATLASSUME(m_dwRef == 0);
+		WINRT_ASSERT(m_dwRef == 0);
 	}
 	// If this assert occurs, your object has probably been deleted
 	// Try using DECLARE_PROTECT_FINAL_CONSTRUCT()
 
-#ifdef _ATL_USE_WINAPI_FAMILY_DESKTOP_APP
 	static HRESULT WINAPI _Break(
 		_In_opt_ void* /* pv */,
 		_In_ REFIID iid,
@@ -180,7 +168,6 @@ public:
 		_Analysis_assume_(FALSE);   // not reached, no need to analyze
 		return S_FALSE;
 	}
-#endif // _ATL_USE_WINAPI_FAMILY_DESKTOP_APP
 
 	static _Post_equal_to_(E_NOINTERFACE) HRESULT WINAPI _NoInterface(
 		_In_opt_ void* /* pv */,
@@ -196,7 +183,7 @@ public:
 		_COM_Outptr_ void** ppvObject,
 		_In_ DWORD_PTR dw)
 	{
-		_ATL_CREATORDATA* pcd = (_ATL_CREATORDATA*)dw;
+		CREATORDATA* pcd = (CREATORDATA*)dw;
 		return pcd->pFunc(pv, iid, ppvObject);
 	}
 	static HRESULT WINAPI _Delegate(
@@ -282,7 +269,7 @@ public:
 		return _ThreadModel::Decrement(&m_dwRef);
 	}
 
-	HRESULT _AtlInitialConstruct()
+	HRESULT _InitialConstruct()
 	{
 		return m_critsec.Init();
 	}

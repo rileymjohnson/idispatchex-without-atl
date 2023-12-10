@@ -1,4 +1,5 @@
 #include "registry_parser.h"
+#include "entry.h"
 
 BOOL RegParser::EndOfVar()
 {
@@ -329,7 +330,7 @@ HRESULT RegParser::PreProcessBuffer(LPTSTR lpszReg, LPTSTR* ppszReg)
 	HRESULT hr = S_OK;
 
 	bool bRedirectionEnabled = false;
-	hr = AtlGetPerUserRegistration(&bRedirectionEnabled);
+	hr = WinRTGetPerUserRegistration(&bRedirectionEnabled);
 	if (FAILED(hr))
 	{
 		return hr;

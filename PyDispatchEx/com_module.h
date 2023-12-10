@@ -2,6 +2,7 @@
 #include "entry.h"
 #include "pch.h"
 #include "synchronization.h"
+#include "base_module.h"
 
 struct COM_MODULE
 {
@@ -12,7 +13,7 @@ struct COM_MODULE
 	ComCriticalSection m_csObjMap;
 };
 
-ATLINLINE ATLAPI RegisterClassCategoriesHelper(
+inline __declspec(nothrow) HRESULT __stdcall RegisterClassCategoriesHelper(
 	_In_ REFCLSID clsid,
 	_In_opt_ const struct CATMAP_ENTRY* pCatMap,
 	_In_ BOOL bRegister)
@@ -160,7 +161,7 @@ inline __declspec(nothrow) HRESULT __stdcall WinRTUnRegisterTypeLib(
 			PFNUNREGISTERTYPELIB pfnUnRegisterTypeLib = NULL;
 
 			bool bRedirectionEnabled = false;
-			hr = AtlGetPerUserRegistration(&bRedirectionEnabled);
+			hr = WinRTGetPerUserRegistration(&bRedirectionEnabled);
 			if (FAILED(hr))
 			{
 				return hr;
@@ -216,7 +217,7 @@ inline __declspec(nothrow) HRESULT __stdcall WinRTRegisterTypeLib(
 		PFNREGISTERTYPELIB pfnRegisterTypeLib = NULL;
 
 		bool bRedirectionEnabled = false;
-		hr = AtlGetPerUserRegistration(&bRedirectionEnabled);
+		hr = WinRTGetPerUserRegistration(&bRedirectionEnabled);
 		if (FAILED(hr))
 		{
 			return hr;
@@ -339,7 +340,7 @@ public:
 		if (FAILED(m_csObjMap.Init()))
 		{
 			WINRT_ASSERT(0);
-			CAtlBaseModule::m_bInitFailed = true;
+			BaseModule::m_bInitFailed = true;
 			return;
 		}
 		// Set cbSize on success.
@@ -437,7 +438,7 @@ public:
 
 __declspec(selectany) ComModule winrt_com_module;
 
-ATLINLINE ATLAPI ComModuleGetClassObject(
+inline __declspec(nothrow) HRESULT __stdcall ComModuleGetClassObject(
 	_Inout_ COM_MODULE* pComModule,
 	_In_ REFCLSID rclsid,
 	_In_ REFIID riid,

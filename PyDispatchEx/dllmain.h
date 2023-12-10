@@ -3,10 +3,11 @@
 #include "registry_object.h"
 #include "com_module.h"
 #include "module.h"
+#include "base_module.h"
 #include "utils.h"
 
 
-class CPyDispatchExModule : public AtlModule
+class CPyDispatchExModule : public WinRTModule
 {
 public :
 	CPyDispatchExModule()
@@ -61,7 +62,7 @@ public :
 	{
 		if (dwReason == DLL_PROCESS_ATTACH)
 		{
-			if (CAtlBaseModule::m_bInitFailed)
+			if (BaseModule::m_bInitFailed)
 			{
 				WINRT_ASSERT(0);
 				return FALSE;
@@ -119,7 +120,7 @@ public :
 	}
 	static void InitLibId() throw()
 	{
-		AtlModule::m_libid = LIBID_PyDispatchExLib;
+		WinRTModule::m_libid = LIBID_PyDispatchExLib;
 	}
 	static LPCOLESTR GetAppId() throw()
 	{

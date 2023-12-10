@@ -1,6 +1,7 @@
 #pragma once
 #include "pch.h"
 #include "synchronization.h"
+#include "base_module.h"
 
 using namespace ATL;
 
@@ -13,7 +14,7 @@ struct TERMFUNC_ELEM
 	TERMFUNC_ELEM* pNext;
 };
 
-struct ATL_MODULE
+struct MODULE
 {
 	UINT cbSize;
 	LONG m_nLockCnt;
@@ -22,7 +23,7 @@ struct ATL_MODULE
 };
 
 inline __declspec(nothrow) HRESULT __stdcall ModuleAddTermFunc(
-	_Inout_ ATL_MODULE* pModule,
+	_Inout_ MODULE* pModule,
 	_In_ TERMFUNC* pFunc,
 	_In_ DWORD_PTR dw)
 {
@@ -53,7 +54,7 @@ inline __declspec(nothrow) HRESULT __stdcall ModuleAddTermFunc(
 	return hr;
 }
 
-inline __declspec(nothrow) void __stdcall CallTermFunc(_Inout_ ATL_MODULE* pModule)
+inline __declspec(nothrow) void __stdcall CallTermFunc(_Inout_ MODULE* pModule)
 {
 	if (pModule == NULL)
 		_AtlRaiseException((DWORD)EXCEPTION_ACCESS_VIOLATION);
@@ -71,20 +72,20 @@ inline __declspec(nothrow) void __stdcall CallTermFunc(_Inout_ ATL_MODULE* pModu
 }
 
 
-class AtlModule;
-__declspec(selectany) AtlModule* winrt_module = NULL;
+class WinRTModule;
+__declspec(selectany) WinRTModule* winrt_module = NULL;
 
-class __declspec(novtable) AtlModule :
-public ATL_MODULE
+class __declspec(novtable) WinRTModule :
+public MODULE
 {
 public:
 	static GUID m_libid;
 	IGlobalInterfaceTable* m_pGIT;
 
-	AtlModule() throw()
+	WinRTModule() throw()
 	{
 		// Should have only one instance of a class
-		// derived from AtlModule in a project.
+		// derived from WinRTModule in a project.
 		WINRT_ASSERT(winrt_module == NULL);
 		cbSize = 0;
 		m_pTermFuncs = NULL;
@@ -95,14 +96,14 @@ public:
 
 		if (FAILED(m_csStaticDataInitAndTypeInfo.Init()))
 		{
-			ATLTRACE(atlTraceGeneral, 0, _T("ERROR : Unable to initialize critical section in AtlModule\n"));
+			ATLTRACE(atlTraceGeneral, 0, _T("ERROR : Unable to initialize critical section in WinRTModule\n"));
 			WINRT_ASSERT(0);
-			CAtlBaseModule::m_bInitFailed = true;
+			BaseModule::m_bInitFailed = true;
 			return;
 		}
 
 		// Set cbSize on success.
-		cbSize = sizeof(_ATL_MODULE);
+		cbSize = sizeof(MODULE);
 	}
 
 	void Term() throw()
@@ -126,7 +127,7 @@ public:
 		cbSize = 0;
 	}
 
-	virtual ~AtlModule() throw()
+	virtual ~WinRTModule() throw()
 	{
 		Term();
 	}
@@ -271,6 +272,6 @@ public:
 	#endif // _ATL_USE_WINAPI_FAMILY_DESKTOP_APP
 };
 
-__declspec(selectany) GUID AtlModule::m_libid = { 0x0, 0x0, 0x0, {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0} };
+__declspec(selectany) GUID WinRTModule::m_libid = { 0x0, 0x0, 0x0, {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0} };
 
 

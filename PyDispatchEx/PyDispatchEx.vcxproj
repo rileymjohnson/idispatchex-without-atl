@@ -217,7 +217,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="base_module.h" />
     <ClInclude Include="com_class_factory.h" />
+    <ClInclude Include="com_creator.h" />
     <ClInclude Include="com_module.h" />
     <ClInclude Include="com_object.h" />
     <ClInclude Include="com_object_cached.h" />
