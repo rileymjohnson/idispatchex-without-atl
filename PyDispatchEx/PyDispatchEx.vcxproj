@@ -223,6 +223,7 @@
     <ClInclude Include="com_object_cached.h" />
     <ClInclude Include="com_object_root_ex.h" />
     <ClInclude Include="dllmain.h" />
+    <ClInclude Include="entry.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="module.h" />
     <ClInclude Include="pch.h" />

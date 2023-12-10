@@ -1,19 +1,249 @@
 #pragma once
+#include "entry.h"
 #include "pch.h"
 #include "synchronization.h"
-
-using namespace ATL;
 
 struct COM_MODULE
 {
 	UINT cbSize;
 	HINSTANCE m_hInstTypeLib;
-	_ATL_OBJMAP_ENTRY_EX** m_ppAutoObjMapFirst;
-	_ATL_OBJMAP_ENTRY_EX** m_ppAutoObjMapLast;
+	OBJMAP_ENTRY** m_ppAutoObjMapFirst;
+	OBJMAP_ENTRY** m_ppAutoObjMapLast;
 	ComCriticalSection m_csObjMap;
 };
 
-ATLINLINE ATLAPIINL ComModuleRegisterServer(
+ATLINLINE ATLAPI RegisterClassCategoriesHelper(
+	_In_ REFCLSID clsid,
+	_In_opt_ const struct CATMAP_ENTRY* pCatMap,
+	_In_ BOOL bRegister)
+{
+	CComPtr< ICatRegister > pCatRegister;
+	HRESULT hResult;
+	const struct CATMAP_ENTRY* pEntry;
+	CATID catid;
+
+	if (pCatMap == NULL)
+	{
+		return(S_OK);
+	}
+
+	if (InlineIsEqualGUID(clsid, GUID_NULL))
+	{
+		WINRT_ASSERT(0);
+		return S_OK;
+	}
+
+	hResult = CoCreateInstance(CLSID_StdComponentCategoriesMgr, NULL,
+		CLSCTX_INPROC_SERVER, __uuidof(ICatRegister), (void**)&pCatRegister);
+	if (FAILED(hResult))
+	{
+		// Since not all systems have the category manager installed, we'll allow
+		// the registration to succeed even though we didn't register our
+		// categories.  If you really want to register categories on a system
+		// without the category manager, you can either manually add the
+		// appropriate entries to your registry script (.rgs), or you can
+		// redistribute comcat.dll.
+		return(S_OK);
+	}
+
+	hResult = S_OK;
+	pEntry = pCatMap;
+	while (pEntry->iType != CATMAP_ENTRY_END)
+	{
+		catid = *pEntry->pcatid;
+		if (bRegister)
+		{
+			if (pEntry->iType == CATMAP_ENTRY_IMPLEMENTED)
+			{
+				hResult = pCatRegister->RegisterClassImplCategories(clsid, 1,
+					&catid);
+			}
+			else
+			{
+				WINRT_ASSERT(pEntry->iType == CATMAP_ENTRY_REQUIRED);
+				hResult = pCatRegister->RegisterClassReqCategories(clsid, 1,
+					&catid);
+			}
+			if (FAILED(hResult))
+			{
+				return(hResult);
+			}
+		}
+		else
+		{
+			if (pEntry->iType == CATMAP_ENTRY_IMPLEMENTED)
+			{
+				pCatRegister->UnRegisterClassImplCategories(clsid, 1, &catid);
+			}
+			else
+			{
+				WINRT_ASSERT(pEntry->iType == CATMAP_ENTRY_REQUIRED);
+				pCatRegister->UnRegisterClassReqCategories(clsid, 1, &catid);
+			}
+		}
+		pEntry++;
+	}
+
+	// When unregistering remove "Implemented Categories" and "Required Categories" subkeys if they are empty.
+	if (!bRegister)
+	{
+		OLECHAR szGUID[64];
+		ATLENSURE_RETURN_VAL(::StringFromGUID2(clsid, szGUID, 64), ERROR_INVALID_DATA);
+		USES_CONVERSION_EX;
+		TCHAR* pszGUID = OLE2T_EX(szGUID, _ATL_SAFE_ALLOCA_DEF_THRESHOLD);
+		if (pszGUID != NULL)
+		{
+			TCHAR szKey[128];
+#ifdef UNICODE
+			Checked::wcscpy_s(szKey, _countof(szKey), _T("CLSID\\"));
+			Checked::wcscat_s(szKey, _countof(szKey), pszGUID);
+			Checked::wcscat_s(szKey, _countof(szKey), _T("\\Required Categories"));
+#else
+			Checked::strcpy_s(szKey, _countof(szKey), _T("CLSID\\"));
+			Checked::strcat_s(szKey, _countof(szKey), pszGUID);
+			Checked::strcat_s(szKey, _countof(szKey), _T("\\Required Categories"));
+#endif
+
+			CRegKey root(HKEY_CLASSES_ROOT);
+			CRegKey key;
+			DWORD cbSubKeys = 0;
+
+			LRESULT lRes = key.Open(root, szKey, KEY_READ);
+			if (lRes == ERROR_SUCCESS)
+			{
+				lRes = RegQueryInfoKey(key, NULL, NULL, NULL, &cbSubKeys, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+				key.Close();
+				if (lRes == ERROR_SUCCESS && cbSubKeys == 0)
+				{
+					root.DeleteSubKey(szKey);
+				}
+			}
+
+#ifdef UNICODE
+			Checked::wcscpy_s(szKey, _countof(szKey), _T("CLSID\\"));
+			Checked::wcscat_s(szKey, _countof(szKey), pszGUID);
+			Checked::wcscat_s(szKey, _countof(szKey), _T("\\Implemented Categories"));
+#else
+			Checked::strcpy_s(szKey, _countof(szKey), _T("CLSID\\"));
+			Checked::strcat_s(szKey, _countof(szKey), pszGUID);
+			Checked::strcat_s(szKey, _countof(szKey), _T("\\Implemented Categories"));
+#endif
+			lRes = key.Open(root, szKey, KEY_READ);
+			if (lRes == ERROR_SUCCESS)
+			{
+				lRes = RegQueryInfoKey(key, NULL, NULL, NULL, &cbSubKeys, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+				key.Close();
+				if (lRes == ERROR_SUCCESS && cbSubKeys == 0)
+				{
+					root.DeleteSubKey(szKey);
+				}
+			}
+		}
+	}
+	return(S_OK);
+}
+
+inline __declspec(nothrow) HRESULT __stdcall WinRTUnRegisterTypeLib(
+	_In_ HINSTANCE hInstTypeLib,
+	_In_opt_z_ LPCOLESTR lpszIndex)
+{
+	CComBSTR bstrPath;
+	CComPtr<ITypeLib> pTypeLib;
+	HRESULT hr = AtlLoadTypeLib(hInstTypeLib, lpszIndex, &bstrPath, &pTypeLib);
+	if (SUCCEEDED(hr))
+	{
+		TLIBATTR* ptla;
+		hr = pTypeLib->GetLibAttr(&ptla);
+		if (SUCCEEDED(hr))
+		{
+			typedef HRESULT(STDAPICALLTYPE* PFNUNREGISTERTYPELIB)(REFGUID, WORD /* wVerMajor */, WORD /* wVerMinor */, LCID, SYSKIND);
+			PFNUNREGISTERTYPELIB pfnUnRegisterTypeLib = NULL;
+
+			bool bRedirectionEnabled = false;
+			hr = AtlGetPerUserRegistration(&bRedirectionEnabled);
+			if (FAILED(hr))
+			{
+				return hr;
+			}
+
+			if (true == bRedirectionEnabled)
+			{
+				HMODULE hmodOleAut = ::GetModuleHandleW(L"OLEAUT32.DLL");
+				if (hmodOleAut)
+				{
+					pfnUnRegisterTypeLib = reinterpret_cast<PFNUNREGISTERTYPELIB>(::GetProcAddress(hmodOleAut, "UnRegisterTypeLibForUser"));
+				}
+			}
+
+			if (NULL == pfnUnRegisterTypeLib)
+			{
+				pfnUnRegisterTypeLib = (PFNUNREGISTERTYPELIB)&UnRegisterTypeLib;
+			}
+
+			hr = pfnUnRegisterTypeLib(ptla->guid, ptla->wMajorVerNum, ptla->wMinorVerNum, ptla->lcid, ptla->syskind);
+
+			pTypeLib->ReleaseTLibAttr(ptla);
+		}
+	}
+	return hr;
+}
+
+inline __declspec(nothrow) HRESULT __stdcall WinRTRegisterTypeLib(
+	_In_ HINSTANCE hInstTypeLib,
+	_In_opt_z_ LPCOLESTR lpszIndex)
+{
+	CComBSTR bstrPath;
+	CComPtr<ITypeLib> pTypeLib;
+	HRESULT hr = AtlLoadTypeLib(hInstTypeLib, lpszIndex, &bstrPath, &pTypeLib);
+	if (SUCCEEDED(hr))
+	{
+		LPCOLESTR szDir = NULL;
+		OLECHAR szDirBuffer[MAX_PATH];
+		CComBSTR bstrHelpFile;
+		hr = pTypeLib->GetDocumentation(-1, NULL, NULL, NULL, &bstrHelpFile);
+		if (SUCCEEDED(hr) && bstrHelpFile != NULL)
+		{
+			Checked::wcsncpy_s(szDirBuffer, MAX_PATH, bstrHelpFile.m_str, bstrHelpFile.Length());
+			szDirBuffer[MAX_PATH - 1] = 0;
+
+			// truncate at the directory level
+			szDirBuffer[AtlGetDirLen(szDirBuffer)] = 0;
+
+			szDir = &szDirBuffer[0];
+		}
+
+		typedef HRESULT(STDAPICALLTYPE* PFNREGISTERTYPELIB)(ITypeLib*, LPCOLESTR /* const szFullPath */, LPCOLESTR /* const szHelpDir */);
+		PFNREGISTERTYPELIB pfnRegisterTypeLib = NULL;
+
+		bool bRedirectionEnabled = false;
+		hr = AtlGetPerUserRegistration(&bRedirectionEnabled);
+		if (FAILED(hr))
+		{
+			return hr;
+		}
+
+		if (true == bRedirectionEnabled)
+		{
+			HMODULE hmodOleAut = ::GetModuleHandleW(L"OLEAUT32.DLL");
+			if (hmodOleAut)
+			{
+				pfnRegisterTypeLib = reinterpret_cast<PFNREGISTERTYPELIB>(::GetProcAddress(hmodOleAut, "RegisterTypeLibForUser"));
+			}
+		}
+
+		if (NULL == pfnRegisterTypeLib)
+		{
+			pfnRegisterTypeLib = (PFNREGISTERTYPELIB)&RegisterTypeLib;
+		}
+
+		hr = pfnRegisterTypeLib(pTypeLib, bstrPath, szDir);
+
+	}
+	return hr;
+}
+
+
+inline __declspec(nothrow) HRESULT __stdcall ComModuleRegisterServer(
 	_Inout_ COM_MODULE* pComModule,
 	_In_ BOOL bRegTypeLib,
 	_In_opt_ const CLSID* pCLSID)
@@ -25,11 +255,11 @@ ATLINLINE ATLAPIINL ComModuleRegisterServer(
 
 	HRESULT hr = S_OK;
 
-	for (_ATL_OBJMAP_ENTRY_EX** ppEntry = pComModule->m_ppAutoObjMapFirst; ppEntry < pComModule->m_ppAutoObjMapLast; ppEntry++)
+	for (OBJMAP_ENTRY** ppEntry = pComModule->m_ppAutoObjMapFirst; ppEntry < pComModule->m_ppAutoObjMapLast; ppEntry++)
 	{
 		if (*ppEntry != NULL)
 		{
-			_ATL_OBJMAP_ENTRY_EX* pEntry = *ppEntry;
+			OBJMAP_ENTRY* pEntry = *ppEntry;
 			if (pCLSID != NULL)
 			{
 				if (!winrt::Windows::Foundation::GuidHelper::Equals(*pCLSID, *pEntry->pclsid))
@@ -38,7 +268,7 @@ ATLINLINE ATLAPIINL ComModuleRegisterServer(
 			hr = pEntry->pfnUpdateRegistry(TRUE);
 			if (FAILED(hr))
 				break;
-			hr = AtlRegisterClassCategoriesHelper(*pEntry->pclsid,
+			hr = RegisterClassCategoriesHelper(*pEntry->pclsid,
 				pEntry->pfnGetCategoryMap(), TRUE);
 			if (FAILED(hr))
 				break;
@@ -48,16 +278,13 @@ ATLINLINE ATLAPIINL ComModuleRegisterServer(
 	if (SUCCEEDED(hr) && bRegTypeLib)
 	{
 		WINRT_ASSERT(pComModule->m_hInstTypeLib != NULL);
-		hr = AtlRegisterTypeLib(pComModule->m_hInstTypeLib, 0);
+		hr = WinRTRegisterTypeLib(pComModule->m_hInstTypeLib, 0);
 	}
 
 	return hr;
 }
 
-// AtlComUnregisterServer walks the ATL Object Map and unregisters each object in the map
-// If pCLSID is not NULL then only the object referred to by pCLSID is unregistered (The default case)
-// otherwise all the objects are unregistered.
-ATLINLINE ATLAPIINL ComModuleUnregisterServer(
+inline __declspec(nothrow) HRESULT __stdcall ComModuleUnregisterServer(
 	_Inout_ COM_MODULE* pComModule,
 	_In_ BOOL bUnRegTypeLib,
 	_In_opt_ const CLSID* pCLSID)
@@ -68,17 +295,17 @@ ATLINLINE ATLAPIINL ComModuleUnregisterServer(
 
 	HRESULT hr = S_OK;
 
-	for (_ATL_OBJMAP_ENTRY_EX** ppEntry = pComModule->m_ppAutoObjMapFirst; ppEntry < pComModule->m_ppAutoObjMapLast; ppEntry++)
+	for (OBJMAP_ENTRY** ppEntry = pComModule->m_ppAutoObjMapFirst; ppEntry < pComModule->m_ppAutoObjMapLast; ppEntry++)
 	{
 		if (*ppEntry != NULL)
 		{
-			_ATL_OBJMAP_ENTRY_EX* pEntry = *ppEntry;
+			OBJMAP_ENTRY* pEntry = *ppEntry;
 			if (pCLSID != NULL)
 			{
 				if (!IsEqualGUID(*pCLSID, *pEntry->pclsid))
 					continue;
 			}
-			hr = AtlRegisterClassCategoriesHelper(*pEntry->pclsid, pEntry->pfnGetCategoryMap(), FALSE);
+			hr = RegisterClassCategoriesHelper(*pEntry->pclsid, pEntry->pfnGetCategoryMap(), FALSE);
 			if (FAILED(hr))
 				break;
 			hr = pEntry->pfnUpdateRegistry(FALSE); //unregister
@@ -87,24 +314,27 @@ ATLINLINE ATLAPIINL ComModuleUnregisterServer(
 		}
 	}
 	if (SUCCEEDED(hr) && bUnRegTypeLib)
-		hr = AtlUnRegisterTypeLib(pComModule->m_hInstTypeLib, 0);
+		hr = WinRTUnRegisterTypeLib(pComModule->m_hInstTypeLib, 0);
 
 	return hr;
 }
 
-class AtlComModule :
+__declspec(selectany) __declspec(allocate("ATL$__a")) OBJMAP_ENTRY* object_map_entry_first = NULL;
+__declspec(selectany) __declspec(allocate("ATL$__z")) OBJMAP_ENTRY* object_map_entry_last = NULL;
+
+class ComModule :
 	public COM_MODULE
 {
 public:
 
-	AtlComModule() throw()
+	ComModule() throw()
 	{
 		cbSize = 0;
 
 		m_hInstTypeLib = reinterpret_cast<HINSTANCE>(&__ImageBase);
 
-		m_ppAutoObjMapFirst = &__pobjMapEntryFirst + 1;
-		m_ppAutoObjMapLast = &__pobjMapEntryLast;
+		m_ppAutoObjMapFirst = &object_map_entry_first + 1;
+		m_ppAutoObjMapLast = &object_map_entry_last;
 
 		if (FAILED(m_csObjMap.Init()))
 		{
@@ -116,22 +346,22 @@ public:
 		cbSize = sizeof(COM_MODULE);
 	}
 
-	~AtlComModule()
+	~ComModule()
 	{
 		Term();
 	}
 
-	// Called from ~AtlComModule or from ~CAtlExeModule.
+	// Called from ~ComModule or from ~CAtlExeModule.
 	void Term()
 	{
 		if (cbSize == 0)
 			return;
 
-		for (_ATL_OBJMAP_ENTRY_EX** ppEntry = m_ppAutoObjMapFirst; ppEntry < m_ppAutoObjMapLast; ppEntry++)
+		for (OBJMAP_ENTRY** ppEntry = m_ppAutoObjMapFirst; ppEntry < m_ppAutoObjMapLast; ppEntry++)
 		{
 			if (*ppEntry != NULL)
 			{
-				_ATL_OBJMAP_CACHE* pCache = (**ppEntry).pCache;
+				OBJMAP_CACHE* pCache = (**ppEntry).pCache;
 
 				if (pCache->pCF != NULL)
 				{
@@ -155,19 +385,19 @@ public:
 	// Registry support (helpers)
 	HRESULT RegisterTypeLib()
 	{
-		return AtlRegisterTypeLib(m_hInstTypeLib, NULL);
+		return WinRTRegisterTypeLib(m_hInstTypeLib, NULL);
 	}
 	HRESULT RegisterTypeLib(_In_opt_z_ LPCTSTR lpszIndex)
 	{
-		return AtlRegisterTypeLib(m_hInstTypeLib, lpszIndex);
+		return WinRTRegisterTypeLib(m_hInstTypeLib, lpszIndex);
 	}
 	HRESULT UnRegisterTypeLib()
 	{
-		return AtlUnRegisterTypeLib(m_hInstTypeLib, NULL);
+		return WinRTUnRegisterTypeLib(m_hInstTypeLib, NULL);
 	}
 	HRESULT UnRegisterTypeLib(_In_opt_z_ LPCTSTR lpszIndex)
 	{
-		return AtlUnRegisterTypeLib(m_hInstTypeLib, lpszIndex);
+		return WinRTUnRegisterTypeLib(m_hInstTypeLib, lpszIndex);
 	}
 
 	// RegisterServer walks the ATL Autogenerated object map and registers each object in the map
@@ -197,7 +427,7 @@ public:
 	// Call ObjectMain for all the objects.
 	void ExecuteObjectMain(_In_ bool bStarting)
 	{
-		for (_ATL_OBJMAP_ENTRY_EX** ppEntry = m_ppAutoObjMapFirst; ppEntry < m_ppAutoObjMapLast; ppEntry++)
+		for (OBJMAP_ENTRY** ppEntry = m_ppAutoObjMapFirst; ppEntry < m_ppAutoObjMapLast; ppEntry++)
 		{
 			if (*ppEntry != NULL)
 				(*ppEntry)->pfnObjectMain(bStarting);
@@ -205,7 +435,7 @@ public:
 	}
 };
 
-__declspec(selectany) AtlComModule winrt_com_module;
+__declspec(selectany) ComModule winrt_com_module;
 
 ATLINLINE ATLAPI ComModuleGetClassObject(
 	_Inout_ COM_MODULE* pComModule,
@@ -233,15 +463,15 @@ ATLINLINE ATLAPI ComModuleGetClassObject(
 
 	HRESULT hr = S_OK;
 
-	for (_ATL_OBJMAP_ENTRY_EX** ppEntry = pComModule->m_ppAutoObjMapFirst; ppEntry < pComModule->m_ppAutoObjMapLast; ppEntry++)
+	for (OBJMAP_ENTRY** ppEntry = pComModule->m_ppAutoObjMapFirst; ppEntry < pComModule->m_ppAutoObjMapLast; ppEntry++)
 	{
 		if (*ppEntry != NULL)
 		{
-			const _ATL_OBJMAP_ENTRY_EX* pEntry = *ppEntry;
+			const OBJMAP_ENTRY* pEntry = *ppEntry;
 
 			if ((pEntry->pfnGetClassObject != NULL) && InlineIsEqualGUID(rclsid, *pEntry->pclsid))
 			{
-				_ATL_OBJMAP_CACHE* pCache = pEntry->pCache;
+				OBJMAP_CACHE* pCache = pEntry->pCache;
 
 				if (pCache->pCF == NULL)
 				{

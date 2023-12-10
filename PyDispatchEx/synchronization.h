@@ -176,10 +176,7 @@ public:
 				HRESULT hr;
 
 				hr = Lock();
-				if (FAILED(hr))
-				{
-					AtlThrow(hr);
-				}
+				winrt::check_hresult(hr);
 			}
 		}
 		~ComCritSecLock() throw()
@@ -193,8 +190,8 @@ public:
 		{
 			HRESULT hr;
 
-			ATLASSERT(!m_bLocked);
-			ATLASSUME(!m_bLocked);
+			WINRT_ASSERT(!m_bLocked);
+			WINRT_ASSERT(!m_bLocked);
 			hr = m_cs.Lock();
 			if (FAILED(hr))
 			{
@@ -206,7 +203,7 @@ public:
 		}
 		void Unlock() throw()
 		{
-			ATLASSUME(m_bLocked);
+			WINRT_ASSERT(m_bLocked);
 			m_cs.Unlock();
 			m_bLocked = false;
 		}

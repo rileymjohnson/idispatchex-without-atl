@@ -1,9 +1,7 @@
 #pragma once
 #include "pch.h"
 #include "com_object_root_ex.h"
-#include "synchronization.h"
-
-using namespace ATL;
+#include "entry.h"
 
 class ComClassFactory :
 	public IClassFactory,
@@ -14,10 +12,10 @@ public:
 	{
 		return this->InternalQueryInterface(this, _GetEntries(), iid, ppvObject);
 	}
-	const static ATL::_ATL_INTMAP_ENTRY* WINAPI _GetEntries() throw() {
-		static const ATL::_ATL_INTMAP_ENTRY _entries[] = {
-			{NULL, (DWORD_PTR)_T("ComClassFactory"), (ATL::_ATL_CREATORARGFUNC*)0},
-			{&__uuidof(IClassFactory), ((DWORD_PTR)(static_cast<IClassFactory*>((ComClassFactory*)8))-8), ((ATL::_ATL_CREATORARGFUNC*)1)},
+	const static INTMAP_ENTRY* WINAPI _GetEntries() throw() {
+		static const INTMAP_ENTRY _entries[] = {
+			{NULL, (DWORD_PTR)_T("ComClassFactory"), (CREATORARGFUNC*)0},
+			{&__uuidof(IClassFactory), ((DWORD_PTR)(static_cast<IClassFactory*>((ComClassFactory*)8))-8), ((CREATORARGFUNC*)1)},
 			{NULL, 0, 0}
 		};
 
@@ -66,8 +64,8 @@ public:
 	// helper
 	void SetVoid(_In_opt_ void* pv)
 	{
-		m_pfnCreateInstance = (_ATL_CREATORFUNC*)pv;
+		m_pfnCreateInstance = (CREATORFUNC*)pv;
 	}
-	_ATL_CREATORFUNC* m_pfnCreateInstance;
+	CREATORFUNC* m_pfnCreateInstance;
 };
 

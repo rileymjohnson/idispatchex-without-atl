@@ -6,10 +6,10 @@
 #include "PyDispatchEx_i.h"
 #include "dllmain.h"
 
-CPyDispatchExModule _AtlModule;
+CPyDispatchExModule Module;
 
 // DLL Entry Point
 extern "C" BOOL WINAPI DllMain(HINSTANCE, DWORD dwReason, LPVOID lpReserved)
 {
-	return _AtlModule.DllMain(dwReason, lpReserved);
+	return Module.DllMain(dwReason, lpReserved);
 }

@@ -41,14 +41,19 @@ public:
 	static _Success_(return == S_OK) HRESULT WINAPI CreateInstance(
 		_COM_Outptr_ ComObjectCached<Base>** pp) throw()
 	{
-		ATLASSERT(pp != NULL);
+		WINRT_ASSERT(pp != NULL);
 		if (pp == NULL)
 			return E_POINTER;
 		*pp = NULL;
 
 		HRESULT hRes = E_OUTOFMEMORY;
 		ComObjectCached<Base>* p = NULL;
-		ATLTRY(p = _ATL_NEW ComObjectCached<Base>())
+
+		try
+		{
+			p = new(std::nothrow) ComObjectCached<Base>();
+		} catch(...) {}
+
 			if (p != NULL)
 			{
 				p->SetVoid(NULL);

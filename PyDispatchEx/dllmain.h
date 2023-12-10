@@ -156,5 +156,5 @@ public :
 	}
 };
 
-extern CPyDispatchExModule _AtlModule;
+extern CPyDispatchExModule Module;
 

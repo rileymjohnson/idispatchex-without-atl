@@ -4,33 +4,33 @@
 
 using namespace ATL;
 
-typedef void(__stdcall ATL_TERMFUNC)(_In_ DWORD_PTR dw);
+typedef void(__stdcall TERMFUNC)(_In_ DWORD_PTR dw);
 
-struct ATL_TERMFUNC_ELEM
+struct TERMFUNC_ELEM
 {
-	ATL_TERMFUNC* pFunc;
+	TERMFUNC* pFunc;
 	DWORD_PTR dw;
-	ATL_TERMFUNC_ELEM* pNext;
+	TERMFUNC_ELEM* pNext;
 };
 
 struct ATL_MODULE
 {
 	UINT cbSize;
 	LONG m_nLockCnt;
-	ATL_TERMFUNC_ELEM* m_pTermFuncs;
+	TERMFUNC_ELEM* m_pTermFuncs;
 	ComCriticalSection m_csStaticDataInitAndTypeInfo;
 };
 
-ATLINLINE ATLAPI ModuleAddTermFunc(
+inline __declspec(nothrow) HRESULT __stdcall ModuleAddTermFunc(
 	_Inout_ ATL_MODULE* pModule,
-	_In_ ATL_TERMFUNC* pFunc,
+	_In_ TERMFUNC* pFunc,
 	_In_ DWORD_PTR dw)
 {
 	if (pModule == NULL)
 		return E_INVALIDARG;
 
 	HRESULT hr = S_OK;
-	ATL_TERMFUNC_ELEM* pNew = _ATL_NEW ATL_TERMFUNC_ELEM;
+	TERMFUNC_ELEM* pNew = _ATL_NEW TERMFUNC_ELEM;
 	if (pNew == NULL)
 		hr = E_OUTOFMEMORY;
 	else
@@ -53,13 +53,13 @@ ATLINLINE ATLAPI ModuleAddTermFunc(
 	return hr;
 }
 
-ATLINLINE ATLAPI_(void) CallTermFunc(_Inout_ ATL_MODULE* pModule)
+inline __declspec(nothrow) void __stdcall CallTermFunc(_Inout_ ATL_MODULE* pModule)
 {
 	if (pModule == NULL)
 		_AtlRaiseException((DWORD)EXCEPTION_ACCESS_VIOLATION);
 
-	ATL_TERMFUNC_ELEM* pElem = pModule->m_pTermFuncs;
-	ATL_TERMFUNC_ELEM* pNext = NULL;
+	TERMFUNC_ELEM* pElem = pModule->m_pTermFuncs;
+	TERMFUNC_ELEM* pNext = NULL;
 	while (pElem != NULL)
 	{
 		pElem->pFunc(pElem->dw);
@@ -74,7 +74,7 @@ ATLINLINE ATLAPI_(void) CallTermFunc(_Inout_ ATL_MODULE* pModule)
 class AtlModule;
 __declspec(selectany) AtlModule* winrt_module = NULL;
 
-class ATL_NO_VTABLE AtlModule :
+class __declspec(novtable) AtlModule :
 public ATL_MODULE
 {
 public:
@@ -147,7 +147,7 @@ public:
 	}
 
 	HRESULT AddTermFunc(
-		_In_ _ATL_TERMFUNC* pFunc,
+		_In_ TERMFUNC* pFunc,
 		_In_ DWORD_PTR dw) throw()
 	{
 		return ModuleAddTermFunc(this, pFunc, dw);
@@ -184,11 +184,11 @@ public:
 	HRESULT WINAPI UpdateRegistryFromResource(
 		_In_z_ LPCTSTR lpszRes,
 		_In_ BOOL bRegister,
-		_In_opt_ struct _ATL_REGMAP_ENTRY* pMapEntries = NULL);
+		_In_opt_ struct REGMAP_ENTRY* pMapEntries = NULL);
 	HRESULT WINAPI UpdateRegistryFromResource(
 		_In_ UINT nResID,
 		_In_ BOOL bRegister,
-		_In_opt_ struct _ATL_REGMAP_ENTRY* pMapEntries = NULL) throw();
+		_In_opt_ struct REGMAP_ENTRY* pMapEntries = NULL) throw();
 
 	static void EscapeSingleQuote(
 		_Out_writes_z_(destSizeInChars) LPOLESTR lpDest,
@@ -212,14 +212,13 @@ public:
 		*lpDest = '\0';
 	}
 
-	ATL_DEPRECATED("AtlModule::EscapeSingleQuote(dest, src) is unsafe. Instead, use AtlModule::EscapeSingleQuote(dest, size, src)")
 	static void EscapeSingleQuote(
 		_Out_ _Post_z_ LPOLESTR lpDest,
 		_In_z_ LPCOLESTR lp) throw()
 	{
-ATLPREFAST_SUPPRESS(6386)
+
 		EscapeSingleQuote(lpDest, SIZE_MAX / sizeof(OLECHAR), lp);
-ATLPREFAST_UNSUPPRESS()
+
 	}
 
 	// search for an occurrence of string p2 in string p1

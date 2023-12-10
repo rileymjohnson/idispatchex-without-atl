@@ -12,22 +12,22 @@ using namespace ATL;
 
 STDAPI DllCanUnloadNow(void)
 {
-	return _AtlModule.DllCanUnloadNow();
+	return Module.DllCanUnloadNow();
 }
 
 STDAPI DllGetClassObject(_In_ REFCLSID rclsid, _In_ REFIID riid, _Outptr_ LPVOID* ppv)
 {
-	return _AtlModule.DllGetClassObject(rclsid, riid, ppv);
+	return Module.DllGetClassObject(rclsid, riid, ppv);
 }
 
 STDAPI DllRegisterServer(void)
 {
-	return _AtlModule.DllRegisterServer();
+	return Module.DllRegisterServer();
 }
 
 STDAPI DllUnregisterServer(void)
 {
-	return _AtlModule.DllUnregisterServer();
+	return Module.DllUnregisterServer();
 }
 
 STDAPI DllInstall(BOOL bInstall, _In_opt_  LPCWSTR pszCmdLine)

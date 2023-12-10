@@ -14,6 +14,7 @@
 #include "com_class_factory.h"
 #include "com_object.h"
 #include "com_object_cached.h"
+#include "entry.h"
 
 #include "PyDispatchEx_i.h"
 
@@ -102,13 +103,13 @@ public:
 	{
 		return this->InternalQueryInterface(this, _GetEntries(), iid, ppvObject);
 	}
-	const static ATL::_ATL_INTMAP_ENTRY* WINAPI _GetEntries() throw() {
-		static const ATL::_ATL_INTMAP_ENTRY _entries[] = {
-			{NULL, (DWORD_PTR)_T("CPyDispatchExObject"), (ATL::_ATL_CREATORARGFUNC*)0},
-			{&__uuidof(IPyDispatchExObject), ((DWORD_PTR)(static_cast<IPyDispatchExObject*>((CPyDispatchExObject*)8))-8), ((ATL::_ATL_CREATORARGFUNC*)1)},
-			{&__uuidof(IDispatch), ((DWORD_PTR)(static_cast<IDispatch*>((CPyDispatchExObject*)8))-8), ((ATL::_ATL_CREATORARGFUNC*)1)},
-			{&__uuidof(IDispatchEx), ((DWORD_PTR)(static_cast<IDispatchEx*>((CPyDispatchExObject*)8))-8), ((ATL::_ATL_CREATORARGFUNC*)1)},
-			{&__uuidof(ISupportErrorInfo), ((DWORD_PTR)(static_cast<ISupportErrorInfo*>((CPyDispatchExObject*)8))-8), ((ATL::_ATL_CREATORARGFUNC*)1)},
+	const static INTMAP_ENTRY* WINAPI _GetEntries() throw() {
+		static const INTMAP_ENTRY _entries[] = {
+			{NULL, (DWORD_PTR)_T("CPyDispatchExObject"), (CREATORARGFUNC*)0},
+			{&__uuidof(IPyDispatchExObject), ((DWORD_PTR)(static_cast<IPyDispatchExObject*>((CPyDispatchExObject*)8))-8), ((CREATORARGFUNC*)1)},
+			{&__uuidof(IDispatch), ((DWORD_PTR)(static_cast<IDispatch*>((CPyDispatchExObject*)8))-8), ((CREATORARGFUNC*)1)},
+			{&__uuidof(IDispatchEx), ((DWORD_PTR)(static_cast<IDispatchEx*>((CPyDispatchExObject*)8))-8), ((CREATORARGFUNC*)1)},
+			{&__uuidof(ISupportErrorInfo), ((DWORD_PTR)(static_cast<ISupportErrorInfo*>((CPyDispatchExObject*)8))-8), ((CREATORARGFUNC*)1)},
 			{NULL, 0, 0}
 		};
 
@@ -190,9 +191,9 @@ public:
 	STDMETHOD(put_TestProperty1)(VARIANT newVal) override;
 };
 
-__declspec(selectany) ATL::_ATL_OBJMAP_CACHE object_cache = { nullptr, 0 };
+__declspec(selectany) OBJMAP_CACHE object_cache = { nullptr, 0 };
 
-constexpr ATL::_ATL_OBJMAP_ENTRY_EX object_map = {
+constexpr OBJMAP_ENTRY object_map = {
 	&__uuidof(PyDispatchExObject),
 	CPyDispatchExObject::UpdateRegistry,
 	CPyDispatchExObject::_ClassFactoryCreatorClass::CreateInstance,
@@ -203,5 +204,5 @@ constexpr ATL::_ATL_OBJMAP_ENTRY_EX object_map = {
 	CPyDispatchExObject::ObjectMain
 };
 
-extern "C" __declspec(allocate("ATL$__m")) __declspec(selectany) const ATL::_ATL_OBJMAP_ENTRY_EX* const __pobjMap_CPyDispatchExObject = &object_map;
+extern "C" __declspec(allocate("ATL$__m")) __declspec(selectany) const OBJMAP_ENTRY* const __pobjMap_CPyDispatchExObject = &object_map;
 __pragma(comment(linker, "/include:__pobjMap_CPyDispatchExObject"));
