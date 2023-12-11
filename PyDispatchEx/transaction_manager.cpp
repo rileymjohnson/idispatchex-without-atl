@@ -10,7 +10,7 @@ inline HMODULE LoadSystemLibraryUsingFullPath(_In_z_ const WCHAR* pszLibrary)
 #ifndef _USING_V110_SDK71_
 	// the LOAD_LIBRARY_SEARCH_SYSTEM32 flag for LoadLibraryExW is only supported if the DLL-preload fixes are installed, so
 	// use LoadLibraryExW only if SetDefaultDllDirectories is available (only on Win8, or with KB2533623 on Vista and Win7)...
-	IFDYNAMICGETCACHEDFUNCTION(L"kernel32.dll", SetDefaultDllDirectories, pfSetDefaultDllDirectories)
+	static volatile auto pfSetDefaultDllDirectories_cache = reinterpret_cast<decltype(::SetDefaultDllDirectories)*>(NULL); auto pfSetDefaultDllDirectories = reinterpret_cast<decltype(::SetDefaultDllDirectories)*>(pfSetDefaultDllDirectories_cache); if (pfSetDefaultDllDirectories == reinterpret_cast<decltype(::SetDefaultDllDirectories)*>(NULL)) { HINSTANCE hLibrary = GetModuleHandleW(L"kernel32.dll"); if (hLibrary != NULL) { pfSetDefaultDllDirectories = reinterpret_cast<decltype(::SetDefaultDllDirectories)*>(::GetProcAddress(hLibrary, "SetDefaultDllDirectories")); pfSetDefaultDllDirectories_cache = reinterpret_cast<decltype(::SetDefaultDllDirectories)*>(::EncodePointer((PVOID)pfSetDefaultDllDirectories)); } } else { pfSetDefaultDllDirectories = reinterpret_cast<decltype(::SetDefaultDllDirectories)*>(::DecodePointer((PVOID)pfSetDefaultDllDirectories)); } if (pfSetDefaultDllDirectories != reinterpret_cast<decltype(::SetDefaultDllDirectories)*>(NULL))
 	{
 		return(::LoadLibraryExW(pszLibrary, NULL, LOAD_LIBRARY_SEARCH_SYSTEM32));
 	}
