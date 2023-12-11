@@ -454,8 +454,16 @@ inline __declspec(nothrow) HRESULT __stdcall ComModuleUnregisterServer(
 	return hr;
 }
 
-__declspec(selectany) __declspec(allocate("ATL$__a")) OBJMAP_ENTRY* object_map_entry_first = NULL;
-__declspec(selectany) __declspec(allocate("ATL$__z")) OBJMAP_ENTRY* object_map_entry_last = NULL;
+#pragma section("WINRT$__a", read)
+#pragma section("WINRT$__z", read)
+
+extern "C"
+{
+	__declspec(selectany) __declspec(allocate("WINRT$__a")) OBJMAP_ENTRY* object_map_entry_first = NULL;
+	__declspec(selectany) __declspec(allocate("WINRT$__z")) OBJMAP_ENTRY* object_map_entry_last = NULL;
+}
+
+#pragma comment(linker, "/merge:WINRT=.rdata")
 
 class ComModule :
 	public COM_MODULE

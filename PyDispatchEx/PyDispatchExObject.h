@@ -203,5 +203,6 @@ constexpr OBJMAP_ENTRY object_map = {
 	CPyDispatchExObject::ObjectMain
 };
 
-extern "C" __declspec(allocate("ATL$__m")) __declspec(selectany) const OBJMAP_ENTRY* const __pobjMap_CPyDispatchExObject = &object_map;
+#pragma section("WINRT$__m", read)
+extern "C" __declspec(allocate("WINRT$__m")) __declspec(selectany) const OBJMAP_ENTRY* const __pobjMap_CPyDispatchExObject = &object_map;
 __pragma(comment(linker, "/include:__pobjMap_CPyDispatchExObject"));
