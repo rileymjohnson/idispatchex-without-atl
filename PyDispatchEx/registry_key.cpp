@@ -1,5 +1,7 @@
 #include "registry_key.h"
 
+#include <tchar.h>
+
 
 RegKey::RegKey(_In_opt_ TransactionManager* pTM) throw() :
 	m_hKey(NULL), m_samWOW64(0), m_pTM(pTM)

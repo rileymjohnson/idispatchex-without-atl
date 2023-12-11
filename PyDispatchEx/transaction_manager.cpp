@@ -1,5 +1,7 @@
 #include "transaction_manager.h"
 
+#include <tchar.h>
+
 inline HMODULE LoadSystemLibraryUsingFullPath(_In_z_ const WCHAR* pszLibrary)
 {
 #if (NTDDI_WINXPSP2 > NTDDI_WIN7)

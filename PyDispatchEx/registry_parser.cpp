@@ -1,4 +1,7 @@
 #include "registry_parser.h"
+
+#include <tchar.h>
+
 #include "entry.h"
 
 BOOL RegParser::EndOfVar()
