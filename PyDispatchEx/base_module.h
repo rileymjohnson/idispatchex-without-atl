@@ -1,7 +1,6 @@
 #pragma once
 #include "pch.h"
 #include "synchronization.h"
-#include <vector>
 
 struct BASE_MODULE
 {

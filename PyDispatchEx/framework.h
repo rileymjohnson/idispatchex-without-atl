@@ -14,5 +14,8 @@
 #include <winrt/Windows.Foundation.h>
 
 #include <string>
+#include <vector>
 
 #include <oleauto.h>
+#include <tchar.h>
+

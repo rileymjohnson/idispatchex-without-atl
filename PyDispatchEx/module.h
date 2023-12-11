@@ -1,5 +1,4 @@
 #pragma once
-#include <tchar.h>
 
 #include "pch.h"
 #include "synchronization.h"

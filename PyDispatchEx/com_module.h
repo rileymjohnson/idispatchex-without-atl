@@ -1,5 +1,4 @@
 #pragma once
-#include <tchar.h>
 
 #include "entry.h"
 #include "pch.h"
