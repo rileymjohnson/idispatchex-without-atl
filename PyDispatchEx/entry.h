@@ -3,15 +3,15 @@
 
 bool __declspec(selectany) winrt_register_per_user = false;
 
-inline __declspec(nothrow) HRESULT __stdcall WinRTSetPerUserRegistration(_In_ bool bEnable)
+inline __declspec(nothrow) HRESULT __stdcall WinRTSetPerUserRegistration(bool bEnable)
 {
 	winrt_register_per_user = bEnable;
 	return S_OK;
 }
 
-inline __declspec(nothrow) HRESULT __stdcall WinRTGetPerUserRegistration(_Out_ bool* pbEnabled)
+inline __declspec(nothrow) HRESULT __stdcall WinRTGetPerUserRegistration(bool* pbEnabled)
 {
-	if (pbEnabled == NULL)
+	if (pbEnabled == nullptr)
 		return E_POINTER;
 
 	*pbEnabled = winrt_register_per_user;
@@ -25,20 +25,13 @@ inline __declspec(nothrow) HRESULT __stdcall WinRTGetPerUserRegistration(_Out_ b
 struct CATMAP_ENTRY
 {
 	int iType;
-	const GUID* pcatid;
+	const winrt::guid* pcatid;
 };
 
-typedef HRESULT(WINAPI CREATORFUNC)(
-	_In_opt_ void* pv,
-	_In_ REFIID riid,
-	_COM_Outptr_ LPVOID* ppv);
-typedef HRESULT(WINAPI CREATORARGFUNC)(
-	_In_opt_ void* pv,
-	_In_ REFIID riid,
-	_COM_Outptr_ LPVOID* ppv,
-	_In_ DWORD_PTR dw);
+typedef HRESULT(WINAPI CREATORFUNC)(void* pv, const winrt::guid& riid, LPVOID* ppv);
+typedef HRESULT(WINAPI CREATORARGFUNC)(void* pv, const winrt::guid& riid, LPVOID* ppv, DWORD_PTR dw);
 typedef LPCTSTR(WINAPI DESCRIPTIONFUNC)();
-typedef const struct CATMAP_ENTRY* (CATMAPFUNC)();
+typedef const CATMAP_ENTRY* (CATMAPFUNC)();
 
 struct CREATORDATA
 {
@@ -53,7 +46,7 @@ struct CACHEDATA
 
 struct INTMAP_ENTRY
 {
-	const IID* piid;       // the interface id (IID)
+	const winrt::guid* piid;       // the interface id (IID)
 	DWORD_PTR dw;
 	CREATORARGFUNC* pFunc; //NULL:end, 1:offset, n:ptr
 };
@@ -72,7 +65,7 @@ struct OBJMAP_CACHE
 
 struct OBJMAP_ENTRY
 {
-	const CLSID* pclsid;
+	const winrt::guid* pclsid;
 	HRESULT(WINAPI* pfnUpdateRegistry)(_In_ BOOL bRegister);
 	CREATORFUNC* pfnGetClassObject;
 	CREATORFUNC* pfnCreateInstance;

@@ -100,15 +100,15 @@ public:
 
 	HRESULT _InternalQueryInterface( _In_ REFIID iid, _COM_Outptr_ void** ppvObject) throw()
 	{
-		return this->InternalQueryInterface(this, _GetEntries(), iid, ppvObject);
+		return InternalQueryInterface(this, _GetEntries(), iid, ppvObject);
 	}
 	const static INTMAP_ENTRY* WINAPI _GetEntries() throw() {
 		static const INTMAP_ENTRY _entries[] = {
 			{NULL, (DWORD_PTR)_T("CPyDispatchExObject"), (CREATORARGFUNC*)0},
-			{&__uuidof(IPyDispatchExObject), ((DWORD_PTR)(static_cast<IPyDispatchExObject*>((CPyDispatchExObject*)8))-8), ((CREATORARGFUNC*)1)},
-			{&__uuidof(IDispatch), ((DWORD_PTR)(static_cast<IDispatch*>((CPyDispatchExObject*)8))-8), ((CREATORARGFUNC*)1)},
-			{&__uuidof(IDispatchEx), ((DWORD_PTR)(static_cast<IDispatchEx*>((CPyDispatchExObject*)8))-8), ((CREATORARGFUNC*)1)},
-			{&__uuidof(ISupportErrorInfo), ((DWORD_PTR)(static_cast<ISupportErrorInfo*>((CPyDispatchExObject*)8))-8), ((CREATORARGFUNC*)1)},
+			{&winrt::guid_of<IPyDispatchExObject>(), ((DWORD_PTR)(static_cast<IPyDispatchExObject*>((CPyDispatchExObject*)8))-8), ((CREATORARGFUNC*)1)},
+			{&winrt::guid_of<IDispatch>(), ((DWORD_PTR)(static_cast<IDispatch*>((CPyDispatchExObject*)8))-8), ((CREATORARGFUNC*)1)},
+			{&winrt::guid_of<IDispatchEx>(), ((DWORD_PTR)(static_cast<IDispatchEx*>((CPyDispatchExObject*)8))-8), ((CREATORARGFUNC*)1)},
+			{&winrt::guid_of<ISupportErrorInfo>(), ((DWORD_PTR)(static_cast<ISupportErrorInfo*>((CPyDispatchExObject*)8))-8), ((CREATORARGFUNC*)1)},
 			{NULL, 0, 0}
 		};
 
@@ -193,7 +193,7 @@ public:
 __declspec(selectany) OBJMAP_CACHE object_cache = { nullptr, 0 };
 
 constexpr OBJMAP_ENTRY object_map = {
-	&__uuidof(PyDispatchExObject),
+	&winrt::guid_of<PyDispatchExObject>(),
 	CPyDispatchExObject::UpdateRegistry,
 	CPyDispatchExObject::_ClassFactoryCreatorClass::CreateInstance,
 	CPyDispatchExObject::_CreatorClass::CreateInstance,

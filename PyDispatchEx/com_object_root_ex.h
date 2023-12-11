@@ -2,27 +2,22 @@
 #include "pch.h"
 #include "entry.h"
 
-inline __declspec(nothrow) HRESULT __stdcall WinRTInternalQueryInterface(
-	_Inout_ void* pThis,
-	_In_ const INTMAP_ENTRY* pEntries,
-	_In_ REFIID iid,
-	_COM_Outptr_ void** ppvObject)
+inline __declspec(nothrow) HRESULT __stdcall WinRTInternalQueryInterface(void* pThis, const INTMAP_ENTRY* pEntries, REFIID iid, void** ppvObject)
 {
 	WINRT_ASSERT(pThis != NULL);
 	WINRT_ASSERT(pEntries != NULL);
 
-	if (pThis == NULL || pEntries == NULL)
+	if (pThis == nullptr || pEntries == nullptr)
 		return E_INVALIDARG;
 
-	// First entry in the com map should be a simple map entry
 	WINRT_ASSERT(pEntries->pFunc == ((CREATORARGFUNC*)1));
 
-	if (ppvObject == NULL)
+	if (ppvObject == nullptr)
 		return E_POINTER;
 
 	if (winrt::Windows::Foundation::GuidHelper::Equals(iid, IID_IUnknown)) // use first interface
 	{
-		IUnknown* pUnk = (IUnknown*)((INT_PTR)pThis + pEntries->dw);
+		auto pUnk = reinterpret_cast<IUnknown*>(reinterpret_cast<INT_PTR>(pThis) + pEntries->dw);
 		pUnk->AddRef();
 		*ppvObject = pUnk;
 		return S_OK;
@@ -32,25 +27,23 @@ inline __declspec(nothrow) HRESULT __stdcall WinRTInternalQueryInterface(
 
 	for (;; pEntries++)
 	{
-		if (pEntries->pFunc == NULL)
+		if (pEntries->pFunc == nullptr)
 		{
 			hRes = E_NOINTERFACE;
 			break;
 		}
 
-		BOOL bBlind = (pEntries->piid == NULL);
+		BOOL bBlind = (pEntries->piid == nullptr);
 		if (bBlind || InlineIsEqualGUID(*(pEntries->piid), iid))
 		{
-			if (pEntries->pFunc == ((CREATORARGFUNC*)1)) //offset
+			if (pEntries->pFunc == reinterpret_cast<CREATORARGFUNC*>(1)) //offset
 			{
 				WINRT_ASSERT(!bBlind);
-				IUnknown* pUnk = (IUnknown*)((INT_PTR)pThis + pEntries->dw);
+				auto* pUnk = reinterpret_cast<IUnknown*>(reinterpret_cast<INT_PTR>(pThis) + pEntries->dw);
 				pUnk->AddRef();
 				*ppvObject = pUnk;
 				return S_OK;
 			}
-
-			// Actual function call
 
 			hRes = pEntries->pFunc(pThis,
 				iid, ppvObject, pEntries->dw);
@@ -61,7 +54,7 @@ inline __declspec(nothrow) HRESULT __stdcall WinRTInternalQueryInterface(
 		}
 	}
 
-	*ppvObject = NULL;
+	*ppvObject = nullptr;
 
 	return hRes;
 }
@@ -81,9 +74,7 @@ public:
 	{
 		return S_OK;
 	}
-	// For library initialization only
-	_Post_satisfies_(return <= 0)   // Ensure callers handle error cases, but S_OK is only success status supported
-		HRESULT _FinalConstruct()
+	HRESULT _FinalConstruct()
 	{
 		return S_OK;
 	}
@@ -110,7 +101,7 @@ public:
 
 	static const struct CATMAP_ENTRY* GetCategoryMap()
 	{
-		return NULL;
+		return nullptr;
 	}
 	static HRESULT WINAPI InternalQueryInterface(
 		_Inout_ void* pThis,
@@ -192,8 +183,8 @@ public:
 	{
 		HRESULT hRes = E_NOINTERFACE;
 		IUnknown* p = *(IUnknown**)((DWORD_PTR)pv + dw);
-		*ppvObject = NULL;
-		if (p != NULL)
+		*ppvObject = nullptr;
+		if (p != nullptr)
 			hRes = p->QueryInterface(iid, ppvObject);
 		return hRes;
 	}
@@ -215,8 +206,8 @@ public:
 	{
 		const INTMAP_ENTRY* (WINAPI * pFunc)() = (const INTMAP_ENTRY * (WINAPI*)())dw;
 		const INTMAP_ENTRY* pEntries = pFunc();
-		*ppvObject = NULL;
-		if (pEntries == NULL)
+		*ppvObject = nullptr;
+		if (pEntries == nullptr)
 			return S_OK;
 		return InternalQueryInterface(pv, pEntries, iid, ppvObject);
 	}
@@ -229,10 +220,10 @@ public:
 		HRESULT hRes = E_NOINTERFACE;
 		CACHEDATA* pcd = (CACHEDATA*)dw;
 		IUnknown** pp = (IUnknown**)((DWORD_PTR)pv + pcd->dwOffsetVar);
-		*ppvObject = NULL;
-		if (*pp == NULL)
+		*ppvObject = nullptr;
+		if (*pp == nullptr)
 			hRes = pcd->pFunc(pv, __uuidof(IUnknown), (void**)pp);
-		if (*pp != NULL)
+		if (*pp != nullptr)
 			hRes = (*pp)->QueryInterface(iid, ppvObject);
 		return hRes;
 	}

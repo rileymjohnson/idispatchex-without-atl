@@ -8,42 +8,37 @@ class ComClassFactory :
 	public ComObjectRootEx
 {
 public:
-	HRESULT _InternalQueryInterface( _In_ REFIID iid, _COM_Outptr_ void** ppvObject) throw()
+	HRESULT _InternalQueryInterface(REFIID iid, void** ppvObject) throw()
 	{
-		return this->InternalQueryInterface(this, _GetEntries(), iid, ppvObject);
+		return InternalQueryInterface(this, _GetEntries(), iid, ppvObject);
 	}
 	const static INTMAP_ENTRY* WINAPI _GetEntries() throw() {
 		static const INTMAP_ENTRY _entries[] = {
-			{NULL, (DWORD_PTR)_T("ComClassFactory"), (CREATORARGFUNC*)0},
-			{&__uuidof(IClassFactory), ((DWORD_PTR)(static_cast<IClassFactory*>((ComClassFactory*)8))-8), ((CREATORARGFUNC*)1)},
-			{NULL, 0, 0}
+			{nullptr, reinterpret_cast<DWORD_PTR>(L"ComClassFactory"), static_cast<CREATORARGFUNC*>(nullptr)},
+			{&winrt::guid_of<IClassFactory>(), (reinterpret_cast<DWORD_PTR>(static_cast<IClassFactory*>(reinterpret_cast<ComClassFactory*>(8)))-8), reinterpret_cast<CREATORARGFUNC*>(1)},
+			{nullptr, 0, nullptr}
 		};
 
 		return &_entries[1];
 	}
 
-	virtual ULONG STDMETHODCALLTYPE AddRef(void) throw() = 0;
-	virtual ULONG STDMETHODCALLTYPE Release(void) throw() = 0;
-	STDMETHOD(QueryInterface)( REFIID, _COM_Outptr_ void**) throw() = 0;
+	ULONG STDMETHODCALLTYPE AddRef() throw() override = 0;
+	ULONG STDMETHODCALLTYPE Release() throw() override = 0;
+	STDMETHOD(QueryInterface)(REFIID, void**) throw() override = 0;
 
 	virtual ~ComClassFactory()
 	{
 	}
 
-	// IClassFactory
-	STDMETHOD(CreateInstance)(
-		_Inout_opt_ LPUNKNOWN pUnkOuter,
-		_In_ REFIID riid,
-		_COM_Outptr_ void** ppvObj)
+	STDMETHOD(CreateInstance)(const LPUNKNOWN pUnkOuter, REFIID riid, void** ppvObj) override
 	{
 		WINRT_ASSERT(m_pfnCreateInstance != NULL);
 		HRESULT hRes = E_POINTER;
-		if (ppvObj != NULL)
+		if (ppvObj != nullptr)
 		{
-			*ppvObj = NULL;
-			// can't ask for anything other than IUnknown when aggregating
+			*ppvObj = nullptr;
 
-			if ((pUnkOuter != NULL) && !winrt::Windows::Foundation::GuidHelper::Equals(riid, IID_IUnknown))
+			if (pUnkOuter != nullptr && !winrt::Windows::Foundation::GuidHelper::Equals(riid, IID_IUnknown))
 			{
 				hRes = CLASS_E_NOAGGREGATION;
 			}
@@ -53,7 +48,7 @@ public:
 		return hRes;
 	}
 
-	STDMETHOD(LockServer)(_In_ BOOL fLock)
+	STDMETHOD(LockServer)(BOOL fLock) override
 	{
 		if (fLock)
 			winrt_module->Lock();
@@ -61,10 +56,9 @@ public:
 			winrt_module->Unlock();
 		return S_OK;
 	}
-	// helper
-	void SetVoid(_In_opt_ void* pv)
+	void SetVoid(void* pv)
 	{
-		m_pfnCreateInstance = (CREATORFUNC*)pv;
+		m_pfnCreateInstance = static_cast<CREATORFUNC*>(pv);
 	}
 	CREATORFUNC* m_pfnCreateInstance;
 };

@@ -7,8 +7,7 @@ class ComObjectCached :
 	public Base
 {
 public:
-	typedef Base _BaseClass;
-	ComObjectCached(_In_opt_ void* = NULL)
+	ComObjectCached(void* = nullptr)
 	{
 	}
 	virtual ~ComObjectCached()
@@ -25,51 +24,48 @@ public:
 	}
 	STDMETHOD_(ULONG, Release)() throw()
 	{
-		ULONG l = this->InternalRelease();
+		const ULONG l = this->InternalRelease();
 		if (l == 0)
 			delete this;
 		else if (l == 1)
 			winrt_module->Unlock();
 		return l;
 	}
-	STDMETHOD(QueryInterface)(
-		REFIID iid,
-		_COM_Outptr_ void** ppvObject) throw()
+	STDMETHOD(QueryInterface)(REFIID iid, void** ppvObject) throw()
 	{
 		return this->_InternalQueryInterface(iid, ppvObject);
 	}
-	static _Success_(return == S_OK) HRESULT WINAPI CreateInstance(
-		_COM_Outptr_ ComObjectCached<Base>** pp) throw()
+	static  HRESULT WINAPI CreateInstance(ComObjectCached** pp) throw()
 	{
 		WINRT_ASSERT(pp != NULL);
-		if (pp == NULL)
+		if (pp == nullptr)
 			return E_POINTER;
 		*pp = NULL;
 
 		HRESULT hRes = E_OUTOFMEMORY;
-		ComObjectCached<Base>* p = NULL;
+		ComObjectCached* p = nullptr;
 
 		try
 		{
-			p = new(std::nothrow) ComObjectCached<Base>();
+			p = new(std::nothrow) ComObjectCached();
 		} catch(...) {}
 
-			if (p != NULL)
+		if (p != nullptr)
+		{
+			p->SetVoid(NULL);
+			p->InternalFinalConstructAddRef();
+			hRes = p->_InitialConstruct();
+			if (SUCCEEDED(hRes))
+				hRes = p->FinalConstruct();
+			if (SUCCEEDED(hRes))
+				hRes = p->_FinalConstruct();
+			p->InternalFinalConstructRelease();
+			if (hRes != S_OK)
 			{
-				p->SetVoid(NULL);
-				p->InternalFinalConstructAddRef();
-				hRes = p->_InitialConstruct();
-				if (SUCCEEDED(hRes))
-					hRes = p->FinalConstruct();
-				if (SUCCEEDED(hRes))
-					hRes = p->_FinalConstruct();
-				p->InternalFinalConstructRelease();
-				if (hRes != S_OK)
-				{
-					delete p;
-					p = NULL;
-				}
+				delete p;
+				p = NULL;
 			}
+		}
 		*pp = p;
 		return hRes;
 	}

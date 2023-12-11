@@ -2,27 +2,12 @@
 #include "pch.h"
 #include "module.h"
 
-class WinRTModuleLockHelper
-{
-public:
-	WinRTModuleLockHelper()
-	{
-		winrt_module->Lock();
-	}
-
-	~WinRTModuleLockHelper()
-	{
-		winrt_module->Unlock();
-	}
-};
-
 template <class Base>
 class ComObject :
 	public Base
 {
 public:
-	typedef Base _BaseClass;
-	ComObject(_In_opt_ void* = NULL)
+	ComObject(void* = nullptr)
 	{
 		winrt_module->Lock();
 	}
@@ -38,58 +23,56 @@ public:
 	}
 	STDMETHOD_(ULONG, Release)() 
 	{
-		ULONG l = this->InternalRelease();
+		const ULONG l = this->InternalRelease();
 		if (l == 0)
 		{
-			WinRTModuleLockHelper lock;
+			winrt_module->Lock();
 			delete this;
+			winrt_module->Unlock();
 		}
 		return l;
 	}
-	STDMETHOD(QueryInterface)(
-		REFIID iid,
-		_COM_Outptr_ void** ppvObject) throw()
+	STDMETHOD(QueryInterface)(REFIID iid, void** ppvObject) noexcept
 	{
 		return this->_InternalQueryInterface(iid, ppvObject);
 	}
 	template <class Q>
-	HRESULT STDMETHODCALLTYPE QueryInterface(
-		_COM_Outptr_ Q** pp) throw()
+	HRESULT STDMETHODCALLTYPE QueryInterface(Q** pp) noexcept
 	{
-		return QueryInterface(__uuidof(Q), (void**)pp);
+		return QueryInterface(__uuidof(Q), static_cast<void**>(pp));
 	}
 
-	static HRESULT WINAPI CreateInstance(_COM_Outptr_ ComObject<Base>** pp) throw()
+	static HRESULT WINAPI CreateInstance(ComObject** pp) noexcept
 	{
 		WINRT_ASSERT(pp != NULL);
-		if (pp == NULL)
+		if (pp == nullptr)
 			return E_POINTER;
 		*pp = NULL;
 
 		HRESULT hRes = E_OUTOFMEMORY;
-		ComObject<Base>* p = NULL;
+		ComObject* p = nullptr;
 
 		try
 		{
-			p = new(std::nothrow) ComObject<Base>();
+			p = new(std::nothrow) ComObject();
 		} catch(...) {}
 
-			if (p != NULL)
+		if (p != nullptr)
+		{
+			p->SetVoid(NULL);
+			p->InternalFinalConstructAddRef();
+			hRes = p->_InitialConstruct();
+			if (SUCCEEDED(hRes))
+				hRes = p->FinalConstruct();
+			if (SUCCEEDED(hRes))
+				hRes = p->_FinalConstruct();
+			p->InternalFinalConstructRelease();
+			if (hRes != S_OK)
 			{
-				p->SetVoid(NULL);
-				p->InternalFinalConstructAddRef();
-				hRes = p->_InitialConstruct();
-				if (SUCCEEDED(hRes))
-					hRes = p->FinalConstruct();
-				if (SUCCEEDED(hRes))
-					hRes = p->_FinalConstruct();
-				p->InternalFinalConstructRelease();
-				if (hRes != S_OK)
-				{
-					delete p;
-					p = NULL;
-				}
+				delete p;
+				p = NULL;
 			}
+		}
 		*pp = p;
 		return hRes;
 	}

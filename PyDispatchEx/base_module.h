@@ -13,30 +13,29 @@ struct BASE_MODULE
 	std::vector<HINSTANCE> m_rgResourceInstance;
 };
 
-class BaseModule :
-	public BASE_MODULE
+class BaseModule : public BASE_MODULE
 {
 public:
 	static bool m_bInitFailed;
-	BaseModule() throw();
-	~BaseModule() throw ();
+	BaseModule() noexcept;
+	~BaseModule() noexcept;
 
-	HINSTANCE GetModuleInstance() throw()
+	HINSTANCE GetModuleInstance() const noexcept
 	{
 		return m_hInst;
 	}
-	HINSTANCE GetResourceInstance() throw()
+	HINSTANCE GetResourceInstance() const noexcept
 	{
 		return m_hInstResource;
 	}
-	HINSTANCE SetResourceInstance(_In_ HINSTANCE hInst) throw()
+	HINSTANCE SetResourceInstance(const HINSTANCE hInst) noexcept
 	{
-		return static_cast<HINSTANCE>(InterlockedExchangePointer((void**)&m_hInstResource, hInst));
+		return static_cast<HINSTANCE>(InterlockedExchangePointer(reinterpret_cast<void**>(&m_hInstResource), hInst));
 	}
 
-	bool AddResourceInstance(_In_ HINSTANCE hInst) throw();
-	bool RemoveResourceInstance(_In_ HINSTANCE hInst) throw();
-	HINSTANCE GetHInstanceAt(_In_ int i) throw();
+	bool AddResourceInstance(HINSTANCE hInst) noexcept;
+	bool RemoveResourceInstance(HINSTANCE hInst) noexcept;
+	HINSTANCE GetHInstanceAt(int i) noexcept;
 };
 
 __declspec(selectany) bool BaseModule::m_bInitFailed = false;
