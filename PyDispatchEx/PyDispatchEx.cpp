@@ -7,9 +7,6 @@
 #include "PyDispatchEx_i.h"
 #include "dllmain.h"
 
-
-using namespace ATL;
-
 STDAPI DllCanUnloadNow(void)
 {
 	return Module.DllCanUnloadNow();

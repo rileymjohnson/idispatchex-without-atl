@@ -2,8 +2,6 @@
 #include "pch.h"
 #include "entry.h"
 
-using namespace ATL;
-
 inline __declspec(nothrow) HRESULT __stdcall WinRTInternalQueryInterface(
 	_Inout_ void* pThis,
 	_In_ const INTMAP_ENTRY* pEntries,
@@ -17,12 +15,12 @@ inline __declspec(nothrow) HRESULT __stdcall WinRTInternalQueryInterface(
 		return E_INVALIDARG;
 
 	// First entry in the com map should be a simple map entry
-	WINRT_ASSERT(pEntries->pFunc == ((ATL::_ATL_CREATORARGFUNC*)1));
+	WINRT_ASSERT(pEntries->pFunc == ((CREATORARGFUNC*)1));
 
 	if (ppvObject == NULL)
 		return E_POINTER;
 
-	if (InlineIsEqualUnknown(iid)) // use first interface
+	if (winrt::Windows::Foundation::GuidHelper::Equals(iid, IID_IUnknown)) // use first interface
 	{
 		IUnknown* pUnk = (IUnknown*)((INT_PTR)pThis + pEntries->dw);
 		pUnk->AddRef();
@@ -43,7 +41,7 @@ inline __declspec(nothrow) HRESULT __stdcall WinRTInternalQueryInterface(
 		BOOL bBlind = (pEntries->piid == NULL);
 		if (bBlind || InlineIsEqualGUID(*(pEntries->piid), iid))
 		{
-			if (pEntries->pFunc == _ATL_SIMPLEMAPENTRY) //offset
+			if (pEntries->pFunc == ((CREATORARGFUNC*)1)) //offset
 			{
 				WINRT_ASSERT(!bBlind);
 				IUnknown* pUnk = (IUnknown*)((INT_PTR)pThis + pEntries->dw);
@@ -92,7 +90,7 @@ public:
 	void FinalRelease()
 	{
 	}
-	void _AtlFinalRelease() // temp
+	void _FinalRelease() // temp
 	{
 	}
 
@@ -122,7 +120,7 @@ public:
 	{
 		WINRT_ASSERT(ppvObject != NULL);
 		WINRT_ASSERT(pThis != NULL);
-		WINRT_ASSERT(pEntries->pFunc == _ATL_SIMPLEMAPENTRY);
+		WINRT_ASSERT(pEntries->pFunc == ((CREATORARGFUNC*)1));
 		HRESULT hRes = WinRTInternalQueryInterface(pThis, pEntries, iid, ppvObject);
 		return hRes;
 	}
@@ -163,7 +161,7 @@ public:
 		_In_ DWORD_PTR /* dw */)
 	{
 		(iid);
-		_ATLDUMPIID(iid, _T("Break due to QI for interface "), S_OK);
+		((HRESULT)0L);
 		__debugbreak();
 		_Analysis_assume_(FALSE);   // not reached, no need to analyze
 		return S_FALSE;
@@ -251,7 +249,7 @@ class ComObjectRootEx :
 	public ComObjectRootBase
 {
 public:
-	typedef CComMultiThreadModel _ThreadModel;
+	typedef ComMultiThreadModel _ThreadModel;
 	typedef _ThreadModel::AutoCriticalSection _CritSec;
 	typedef _ThreadModel::AutoDeleteCriticalSection _AutoDelCritSec;
 

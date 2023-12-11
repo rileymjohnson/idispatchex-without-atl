@@ -19,9 +19,7 @@
 
 #include "PyDispatchEx_i.h"
 
-using namespace ATL;
-
-class ATL_NO_VTABLE CPyDispatchExObject :
+class __declspec(novtable) CPyDispatchExObject :
 	public ComObjectRootEx,
 	public IPyDispatchExObject,
 	public ISupportErrorInfo

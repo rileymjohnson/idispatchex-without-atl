@@ -2,7 +2,7 @@
 
 inline HMODULE LoadSystemLibraryUsingFullPath(_In_z_ const WCHAR* pszLibrary)
 {
-#if (_ATL_NTDDI_MIN > NTDDI_WIN7)
+#if (NTDDI_WINXPSP2 > NTDDI_WIN7)
 	return(::LoadLibraryExW(pszLibrary, NULL, LOAD_LIBRARY_SEARCH_SYSTEM32));
 #else
 #ifndef _USING_V110_SDK71_

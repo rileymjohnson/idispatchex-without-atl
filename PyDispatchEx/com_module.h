@@ -5,6 +5,138 @@
 #include "base_module.h"
 #include "registry_key.h"
 
+#define MAX_PATH_PLUS_INDEX (260 + 10)
+
+static inline LPTSTR FindExtension(_In_z_ LPCTSTR psz)
+{
+	if (psz == NULL)
+		return NULL;
+	LPCTSTR pszRemember = NULL;
+	while (*psz != _T('\0'))
+	{
+		switch (*psz)
+		{
+		case _T('\\'):
+			pszRemember = NULL;
+			break;
+		case _T('.'):
+			pszRemember = psz;
+			break;
+		default:
+			break;
+		}
+		psz = CharNext(psz);
+	}
+	return (LPTSTR)((pszRemember == NULL) ? psz : pszRemember);
+}
+
+
+inline __declspec(nothrow) HRESULT __stdcall WinRTLoadTypeLib(
+	_In_ HINSTANCE hInstTypeLib,
+	_In_opt_z_ LPCOLESTR lpszIndex,
+	_Outptr_result_z_ BSTR* pbstrPath,
+	_Outptr_ ITypeLib** ppTypeLib)
+{
+	WINRT_ASSERT(pbstrPath != NULL && ppTypeLib != NULL);
+	if (pbstrPath == NULL || ppTypeLib == NULL)
+		return E_POINTER;
+
+	*pbstrPath = NULL;
+	*ppTypeLib = NULL;
+
+	USES_CONVERSION_EX;
+	WINRT_ASSERT(hInstTypeLib != NULL);
+	TCHAR szModule[MAX_PATH_PLUS_INDEX];
+
+	DWORD dwFLen = GetModuleFileName(hInstTypeLib, szModule, MAX_PATH);
+	if (dwFLen == 0)
+	{
+		HRESULT hRes = winrt::impl::hresult_from_win32(WINRT_IMPL_GetLastError());
+		_Analysis_assume_(FAILED(hRes));
+		return hRes;
+	}
+	else if (dwFLen == MAX_PATH)
+		return HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER);
+
+	// get the extension pointer in case of fail
+	LPTSTR lpszExt = NULL;
+
+	lpszExt = FindExtension(szModule);
+
+	if (lpszIndex != NULL)
+	{
+		DWORD nIndexLen = static_cast<DWORD>(_tcslen(lpszIndex));
+
+		DWORD newLen = dwFLen + nIndexLen;
+		if ((newLen < dwFLen) || (newLen < nIndexLen) || (newLen >= MAX_PATH_PLUS_INDEX))
+			return E_FAIL;
+#ifdef UNICODE
+		::wcscpy_s(szModule + dwFLen, _countof(szModule) - dwFLen, lpszIndex);
+#else
+		Checked::strcpy_s(szModule + dwFLen, _countof(szModule) - dwFLen, lpcszIndex);
+#endif
+	}
+	LPOLESTR lpszModule = T2OLE_EX(szModule, _ATL_SAFE_ALLOCA_DEF_THRESHOLD);
+#ifndef _UNICODE
+	if (lpszModule == NULL)
+		return E_OUTOFMEMORY;
+#endif
+	HRESULT hr = LoadTypeLib(lpszModule, ppTypeLib);
+	if (FAILED(hr))
+	{
+		// typelib not in module, try <module>.tlb instead
+		const TCHAR szExt[] = _T(".tlb");
+		if ((lpszExt - szModule + _countof(szExt)) > _MAX_PATH)
+			return E_FAIL;
+
+#ifdef UNICODE
+		::wcscpy_s(lpszExt, _countof(szModule) - (lpszExt - szModule), szExt);
+#else
+		Checked::strcpy_s(lpszExt, _countof(szModule) - (lpszExt - szModule), szExt);
+#endif
+		lpszModule = T2OLE_EX(szModule, _ATL_SAFE_ALLOCA_DEF_THRESHOLD);
+#ifndef _UNICODE
+		if (lpszModule == NULL)
+			return E_OUTOFMEMORY;
+#endif
+		hr = LoadTypeLib(lpszModule, ppTypeLib);
+	}
+	if (SUCCEEDED(hr))
+	{
+		*pbstrPath = ::SysAllocString(lpszModule);
+		if (*pbstrPath == NULL)
+		{
+			hr = E_OUTOFMEMORY;
+			(*ppTypeLib)->Release();
+			*ppTypeLib = NULL;
+		}
+	}
+	return hr;
+}
+
+
+static inline UINT WINAPI GetDirLen(_In_z_ LPCOLESTR lpszPathName) throw()
+{
+	WINRT_ASSERT(lpszPathName != NULL);
+	if (lpszPathName == NULL)
+		return 0;
+
+	// always capture the complete file name including extension (if present)
+	LPCOLESTR lpszTemp = lpszPathName;
+	for (LPCOLESTR lpsz = lpszPathName; *lpsz != '\0'; )
+	{
+
+		LPCOLESTR lp = CharNextW(lpsz);
+
+		// remember last directory/drive separator
+		if (*lpsz == OLESTR('\\') || *lpsz == OLESTR('/') || *lpsz == OLESTR(':'))
+			lpszTemp = lp;
+		lpsz = lp;
+	}
+
+	return UINT(lpszTemp - lpszPathName);
+}
+
 struct COM_MODULE
 {
 	UINT cbSize;
@@ -90,57 +222,60 @@ inline __declspec(nothrow) HRESULT __stdcall RegisterClassCategoriesHelper(
 	if (!bRegister)
 	{
 		OLECHAR szGUID[64];
-		ATLENSURE_RETURN_VAL(::StringFromGUID2(clsid, szGUID, 64), ERROR_INVALID_DATA);
-		USES_CONVERSION_EX;
-		TCHAR* pszGUID = OLE2T_EX(szGUID, _ATL_SAFE_ALLOCA_DEF_THRESHOLD);
-		if (pszGUID != NULL)
+		do
 		{
-			TCHAR szKey[128];
+			const int cond_val = !!::StringFromGUID2(clsid, szGUID, 64);
+			WINRT_ASSERT(cond_val);
+			if(!(cond_val)) return 13L;
+		} while (0);
+		USES_CONVERSION_EX;
+
+		TCHAR szKey[128];
 #ifdef UNICODE
-			::wcscpy_s(szKey, _countof(szKey), _T("CLSID\\"));
-			::wcscat_s(szKey, _countof(szKey), pszGUID);
-			::wcscat_s(szKey, _countof(szKey), _T("\\Required Categories"));
+		::wcscpy_s(szKey, _countof(szKey), _T("CLSID\\"));
+		::wcscat_s(szKey, _countof(szKey), szGUID);
+		::wcscat_s(szKey, _countof(szKey), _T("\\Required Categories"));
 #else
-			Checked::strcpy_s(szKey, _countof(szKey), _T("CLSID\\"));
-			Checked::strcat_s(szKey, _countof(szKey), pszGUID);
-			Checked::strcat_s(szKey, _countof(szKey), _T("\\Required Categories"));
+		Checked::strcpy_s(szKey, _countof(szKey), _T("CLSID\\"));
+		Checked::strcat_s(szKey, _countof(szKey), pszGUID);
+		Checked::strcat_s(szKey, _countof(szKey), _T("\\Required Categories"));
 #endif
 
-			RegKey root(HKEY_CLASSES_ROOT);
-			RegKey key;
-			DWORD cbSubKeys = 0;
+		RegKey root(HKEY_CLASSES_ROOT);
+		RegKey key;
+		DWORD cbSubKeys = 0;
 
-			LRESULT lRes = key.Open(root, szKey, KEY_READ);
-			if (lRes == ERROR_SUCCESS)
+		LRESULT lRes = key.Open(root, szKey, KEY_READ);
+		if (lRes == ERROR_SUCCESS)
+		{
+			lRes = RegQueryInfoKey(key, NULL, NULL, NULL, &cbSubKeys, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+			key.Close();
+			if (lRes == ERROR_SUCCESS && cbSubKeys == 0)
 			{
-				lRes = RegQueryInfoKey(key, NULL, NULL, NULL, &cbSubKeys, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
-				key.Close();
-				if (lRes == ERROR_SUCCESS && cbSubKeys == 0)
-				{
-					root.DeleteSubKey(szKey);
-				}
-			}
-
-#ifdef UNICODE
-			::wcscpy_s(szKey, _countof(szKey), _T("CLSID\\"));
-			::wcscat_s(szKey, _countof(szKey), pszGUID);
-			::wcscat_s(szKey, _countof(szKey), _T("\\Implemented Categories"));
-#else
-			Checked::strcpy_s(szKey, _countof(szKey), _T("CLSID\\"));
-			Checked::strcat_s(szKey, _countof(szKey), pszGUID);
-			Checked::strcat_s(szKey, _countof(szKey), _T("\\Implemented Categories"));
-#endif
-			lRes = key.Open(root, szKey, KEY_READ);
-			if (lRes == ERROR_SUCCESS)
-			{
-				lRes = RegQueryInfoKey(key, NULL, NULL, NULL, &cbSubKeys, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
-				key.Close();
-				if (lRes == ERROR_SUCCESS && cbSubKeys == 0)
-				{
-					root.DeleteSubKey(szKey);
-				}
+				root.DeleteSubKey(szKey);
 			}
 		}
+
+#ifdef UNICODE
+		::wcscpy_s(szKey, _countof(szKey), _T("CLSID\\"));
+		::wcscat_s(szKey, _countof(szKey), szGUID);
+		::wcscat_s(szKey, _countof(szKey), _T("\\Implemented Categories"));
+#else
+		Checked::strcpy_s(szKey, _countof(szKey), _T("CLSID\\"));
+		Checked::strcat_s(szKey, _countof(szKey), pszGUID);
+		Checked::strcat_s(szKey, _countof(szKey), _T("\\Implemented Categories"));
+#endif
+		lRes = key.Open(root, szKey, KEY_READ);
+		if (lRes == ERROR_SUCCESS)
+		{
+			lRes = RegQueryInfoKey(key, NULL, NULL, NULL, &cbSubKeys, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+			key.Close();
+			if (lRes == ERROR_SUCCESS && cbSubKeys == 0)
+			{
+				root.DeleteSubKey(szKey);
+			}
+		}
+
 	}
 	return(S_OK);
 }
@@ -149,9 +284,9 @@ inline __declspec(nothrow) HRESULT __stdcall WinRTUnRegisterTypeLib(
 	_In_ HINSTANCE hInstTypeLib,
 	_In_opt_z_ LPCOLESTR lpszIndex)
 {
-	ATL::CComBSTR bstrPath;
+	wil::unique_bstr bstrPath;
 	winrt::com_ptr<ITypeLib> pTypeLib;
-	HRESULT hr = ATL::AtlLoadTypeLib(hInstTypeLib, lpszIndex, &bstrPath, pTypeLib.put());
+	HRESULT hr = WinRTLoadTypeLib(hInstTypeLib, lpszIndex, bstrPath.addressof(), pTypeLib.put());
 	if (SUCCEEDED(hr))
 	{
 		TLIBATTR* ptla;
@@ -194,22 +329,22 @@ inline __declspec(nothrow) HRESULT __stdcall WinRTRegisterTypeLib(
 	_In_ HINSTANCE hInstTypeLib,
 	_In_opt_z_ LPCOLESTR lpszIndex)
 {
-	ATL::CComBSTR bstrPath;
+	wil::unique_bstr bstrPath;
 	winrt::com_ptr<ITypeLib> pTypeLib;
-	HRESULT hr = ATL::AtlLoadTypeLib(hInstTypeLib, lpszIndex, &bstrPath, pTypeLib.put());
+	HRESULT hr = WinRTLoadTypeLib(hInstTypeLib, lpszIndex, bstrPath.addressof(), pTypeLib.put());
 	if (SUCCEEDED(hr))
 	{
 		LPCOLESTR szDir = NULL;
 		OLECHAR szDirBuffer[MAX_PATH];
-		ATL::CComBSTR bstrHelpFile;
-		hr = pTypeLib->GetDocumentation(-1, NULL, NULL, NULL, &bstrHelpFile);
-		if (SUCCEEDED(hr) && bstrHelpFile != NULL)
+		wil::unique_bstr bstrHelpFile;
+		hr = pTypeLib->GetDocumentation(-1, NULL, NULL, NULL, bstrHelpFile.addressof());
+		if (SUCCEEDED(hr) && bstrHelpFile.get() != NULL)
 		{
-			::wcsncpy_s(szDirBuffer, MAX_PATH, bstrHelpFile.m_str, bstrHelpFile.Length());
+			::wcsncpy_s(szDirBuffer, MAX_PATH, bstrHelpFile.get(), SysStringLen(bstrHelpFile.get()));
 			szDirBuffer[MAX_PATH - 1] = 0;
 
 			// truncate at the directory level
-			szDirBuffer[ATL::AtlGetDirLen(szDirBuffer)] = 0;
+			szDirBuffer[GetDirLen(szDirBuffer)] = 0;
 
 			szDir = &szDirBuffer[0];
 		}
@@ -238,7 +373,7 @@ inline __declspec(nothrow) HRESULT __stdcall WinRTRegisterTypeLib(
 			pfnRegisterTypeLib = (PFNREGISTERTYPELIB)&RegisterTypeLib;
 		}
 
-		hr = pfnRegisterTypeLib(pTypeLib.get(), bstrPath, szDir);
+		hr = pfnRegisterTypeLib(pTypeLib.get(), bstrPath.get(), szDir);
 
 	}
 	return hr;
@@ -399,9 +534,6 @@ public:
 		return WinRTUnRegisterTypeLib(m_hInstTypeLib, lpszIndex);
 	}
 
-	// RegisterServer walks the ATL Autogenerated object map and registers each object in the map
-	// If pCLSID is not NULL then only the object referred to by pCLSID is registered (The default case)
-	// otherwise all the objects are registered
 	HRESULT RegisterServer(
 		_In_ BOOL bRegTypeLib = FALSE,
 		_In_opt_ const CLSID* pCLSID = NULL)
@@ -409,9 +541,6 @@ public:
 		return ComModuleRegisterServer(this, bRegTypeLib, pCLSID);
 	}
 
-	// UnregisterServer walks the ATL Autogenerated object map and unregisters each object in the map
-	// If pCLSID is not NULL then only the object referred to by pCLSID is unregistered (The default case)
-	// otherwise all the objects are unregistered.
 	HRESULT UnregisterServer(
 		_In_ BOOL bRegTypeLib = FALSE,
 		_In_opt_ const CLSID* pCLSID = NULL)
