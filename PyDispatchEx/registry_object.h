@@ -4,8 +4,7 @@
 
 #include <map>
 
-class RegObject :
-	public IRegistrarBase
+class RegObject
 {
 public:
 	STDMETHOD(QueryInterface)(
