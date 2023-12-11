@@ -1,4 +1,6 @@
 #pragma once
+#include <tchar.h>
+
 #include "entry.h"
 #include "pch.h"
 #include "synchronization.h"
@@ -44,7 +46,6 @@ inline __declspec(nothrow) HRESULT __stdcall WinRTLoadTypeLib(
 	*pbstrPath = NULL;
 	*ppTypeLib = NULL;
 
-	USES_CONVERSION_EX;
 	WINRT_ASSERT(hInstTypeLib != NULL);
 	TCHAR szModule[MAX_PATH_PLUS_INDEX];
 
@@ -76,12 +77,11 @@ inline __declspec(nothrow) HRESULT __stdcall WinRTLoadTypeLib(
 		Checked::strcpy_s(szModule + dwFLen, _countof(szModule) - dwFLen, lpcszIndex);
 #endif
 	}
-	LPOLESTR lpszModule = T2OLE_EX(szModule, _ATL_SAFE_ALLOCA_DEF_THRESHOLD);
 #ifndef _UNICODE
 	if (lpszModule == NULL)
 		return E_OUTOFMEMORY;
 #endif
-	HRESULT hr = LoadTypeLib(lpszModule, ppTypeLib);
+	HRESULT hr = LoadTypeLib(szModule, ppTypeLib);
 	if (FAILED(hr))
 	{
 		// typelib not in module, try <module>.tlb instead
@@ -94,16 +94,15 @@ inline __declspec(nothrow) HRESULT __stdcall WinRTLoadTypeLib(
 #else
 		Checked::strcpy_s(lpszExt, _countof(szModule) - (lpszExt - szModule), szExt);
 #endif
-		lpszModule = T2OLE_EX(szModule, _ATL_SAFE_ALLOCA_DEF_THRESHOLD);
 #ifndef _UNICODE
 		if (lpszModule == NULL)
 			return E_OUTOFMEMORY;
 #endif
-		hr = LoadTypeLib(lpszModule, ppTypeLib);
+		hr = LoadTypeLib(szModule, ppTypeLib);
 	}
 	if (SUCCEEDED(hr))
 	{
-		*pbstrPath = ::SysAllocString(lpszModule);
+		*pbstrPath = ::SysAllocString(szModule);
 		if (*pbstrPath == NULL)
 		{
 			hr = E_OUTOFMEMORY;
@@ -228,7 +227,6 @@ inline __declspec(nothrow) HRESULT __stdcall RegisterClassCategoriesHelper(
 			WINRT_ASSERT(cond_val);
 			if(!(cond_val)) return 13L;
 		} while (0);
-		USES_CONVERSION_EX;
 
 		TCHAR szKey[128];
 #ifdef UNICODE
@@ -468,7 +466,7 @@ public:
 	{
 		cbSize = 0;
 
-		m_hInstTypeLib = reinterpret_cast<HINSTANCE>(&__ImageBase);
+		m_hInstTypeLib = reinterpret_cast<HINSTANCE>(&wil::__ImageBase);
 
 		m_ppAutoObjMapFirst = &object_map_entry_first + 1;
 		m_ppAutoObjMapLast = &object_map_entry_last;

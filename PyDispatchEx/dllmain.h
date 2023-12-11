@@ -52,7 +52,7 @@ public :
 		return UpdateRegistryAppId(FALSE);
 	}
 
-	virtual HRESULT AddCommonRGSReplacements(_Inout_ IRegistrarBase* pRegistrar) throw()
+	virtual HRESULT AddCommonRGSReplacements(_Inout_ RegObject* pRegistrar) throw()
 	{
 		return pRegistrar->AddReplacement(L"APPID", GetAppId());
 	}

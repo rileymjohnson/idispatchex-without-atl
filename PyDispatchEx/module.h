@@ -1,6 +1,9 @@
 #pragma once
+#include <tchar.h>
+
 #include "pch.h"
 #include "synchronization.h"
+#include "registry_object.h"
 #include "base_module.h"
 
 typedef void(__stdcall TERMFUNC)(_In_ DWORD_PTR dw);
@@ -174,7 +177,7 @@ public:
 		return hr;
 	}
 
-	virtual HRESULT AddCommonRGSReplacements(_Inout_ IRegistrarBase* /*pRegistrar*/) throw() = 0;
+	virtual HRESULT AddCommonRGSReplacements(_Inout_ RegObject* /*pRegistrar*/) throw() = 0;
 
 	// Resource-based Registration
 	// Statically linking to Registry Ponent
