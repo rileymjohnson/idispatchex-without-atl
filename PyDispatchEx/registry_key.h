@@ -1,15 +1,14 @@
 #pragma once
 #include "pch.h"
-
-using namespace ATL;
+#include "transaction_manager.h"
 
 class RegKey
 {
 public:
 	/// <summary>
 	/// RegKey constructor</summary>
-	/// <param name="pTM">Pointer to CAtlTransactionManager object</param>
-	RegKey(_In_opt_ CAtlTransactionManager* pTM = NULL) throw();
+	/// <param name="pTM">Pointer to TransactionManager object</param>
+	RegKey(_In_opt_ TransactionManager* pTM = NULL) throw();
 	RegKey(_Inout_ RegKey& key) throw();
 	explicit RegKey(_In_ HKEY hKey) throw();
 	~RegKey() throw();
@@ -23,10 +22,9 @@ public:
 	REGSAM m_samWOW64;
 
 	/// <summary>
-	/// Pointer to CAtlTransactionManager object</summary>
-	CAtlTransactionManager* m_pTM;
+	/// Pointer to TransactionManager object</summary>
+	TransactionManager* m_pTM;
 
-	ATL_DEPRECATED("RegKey::SetValue(TCHAR *value, TCHAR *valueName) has been superseded by RegKey::SetStringValue and RegKey::SetMultiStringValue")
 		LSTATUS SetValue(
 			_In_z_ LPCTSTR lpszValue,
 			_In_opt_z_ LPCTSTR lpszValueName = NULL,

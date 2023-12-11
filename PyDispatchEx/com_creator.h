@@ -10,7 +10,7 @@ public:
 		_In_ REFIID riid,
 		_COM_Outptr_ LPVOID* ppv)
 	{
-		ATLASSERT(ppv != NULL);
+		WINRT_ASSERT(ppv != NULL);
 		if (ppv == NULL)
 			return E_POINTER;
 		*ppv = NULL;
@@ -18,10 +18,12 @@ public:
 		HRESULT hRes = E_OUTOFMEMORY;
 		T1* p = NULL;
 
-		ATLPREFAST_SUPPRESS(6014 28197)
 			/* prefast noise VSW 489981 */
-			ATLTRY(p = _ATL_NEW T1(pv))
-			ATLPREFAST_UNSUPPRESS()
+
+		try
+		{
+			p = new(std::nothrow) T1(pv);
+		} catch(...) {}
 
 			if (p != NULL)
 			{
@@ -72,7 +74,7 @@ public:
 		_In_ REFIID riid,
 		_COM_Outptr_ LPVOID* ppv)
 	{
-		ATLASSERT(ppv != NULL);
+		WINRT_ASSERT(ppv != NULL);
 
 		return (pv == NULL) ?
 			T1::CreateInstance(NULL, riid, ppv) :

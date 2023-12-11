@@ -1,8 +1,7 @@
 #include "registry_key.h"
 
-using namespace ATL;;
 
-RegKey::RegKey(_In_opt_ CAtlTransactionManager* pTM) throw() :
+RegKey::RegKey(_In_opt_ TransactionManager* pTM) throw() :
 	m_hKey(NULL), m_samWOW64(0), m_pTM(pTM)
 {
 }
@@ -11,7 +10,7 @@ RegKey::RegKey(_Inout_ RegKey& key) throw() :
 	m_hKey(NULL)
 {
 	REGSAM samWOW64 = key.m_samWOW64;
-	CAtlTransactionManager* pTM = key.m_pTM;
+	TransactionManager* pTM = key.m_pTM;
 	Attach(key.Detach());
 	m_samWOW64 = samWOW64;
 	m_pTM = pTM;
@@ -33,7 +32,7 @@ RegKey& RegKey::operator=(_Inout_ RegKey& key) throw()
 	{
 		Close();
 		REGSAM samWOW64 = key.m_samWOW64;
-		CAtlTransactionManager* pTM = key.m_pTM;
+		TransactionManager* pTM = key.m_pTM;
 		Attach(key.Detach());
 		m_samWOW64 = samWOW64;
 		m_pTM = pTM;
@@ -178,7 +177,7 @@ LSTATUS RegKey::SetValue(
 	_In_ bool bMulti,
 	_In_ int nValueLen)
 {
-	ATLENSURE(lpszValue != NULL);
+	WINRT_ASSERT(lpszValue != NULL);
 	WINRT_ASSERT(m_hKey != NULL);
 
 	if (bMulti && nValueLen == -1)

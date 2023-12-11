@@ -3,8 +3,6 @@
 #include "registry_object.h"
 #include "registry_key.h"
 
-using namespace ATL;
-
 class RegParser
 {
 public:

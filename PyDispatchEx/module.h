@@ -3,8 +3,6 @@
 #include "synchronization.h"
 #include "base_module.h"
 
-using namespace ATL;
-
 typedef void(__stdcall TERMFUNC)(_In_ DWORD_PTR dw);
 
 struct TERMFUNC_ELEM
@@ -31,7 +29,7 @@ inline __declspec(nothrow) HRESULT __stdcall ModuleAddTermFunc(
 		return E_INVALIDARG;
 
 	HRESULT hr = S_OK;
-	TERMFUNC_ELEM* pNew = _ATL_NEW TERMFUNC_ELEM;
+	TERMFUNC_ELEM* pNew = new(std::nothrow) TERMFUNC_ELEM;
 	if (pNew == NULL)
 		hr = E_OUTOFMEMORY;
 	else
@@ -48,7 +46,7 @@ inline __declspec(nothrow) HRESULT __stdcall ModuleAddTermFunc(
 		else
 		{
 			delete pNew;
-			ATLASSERT(0);
+			WINRT_ASSERT(0);
 		}
 	}
 	return hr;
@@ -57,7 +55,7 @@ inline __declspec(nothrow) HRESULT __stdcall ModuleAddTermFunc(
 inline __declspec(nothrow) void __stdcall CallTermFunc(_Inout_ MODULE* pModule)
 {
 	if (pModule == NULL)
-		_AtlRaiseException((DWORD)EXCEPTION_ACCESS_VIOLATION);
+		RaiseException(EXCEPTION_ACCESS_VIOLATION, EXCEPTION_NONCONTINUABLE, 0, NULL);
 
 	TERMFUNC_ELEM* pElem = pModule->m_pTermFuncs;
 	TERMFUNC_ELEM* pNext = NULL;
@@ -96,7 +94,6 @@ public:
 
 		if (FAILED(m_csStaticDataInitAndTypeInfo.Init()))
 		{
-			ATLTRACE(atlTraceGeneral, 0, _T("ERROR : Unable to initialize critical section in WinRTModule\n"));
 			WINRT_ASSERT(0);
 			BaseModule::m_bInitFailed = true;
 			return;
@@ -134,12 +131,12 @@ public:
 
 	virtual LONG Lock() throw()
 	{
-		return CComGlobalsThreadModel::Increment(&m_nLockCnt);
+		return ComMultiThreadModel::Increment(&m_nLockCnt);
 	}
 
 	virtual LONG Unlock() throw()
 	{
-		return CComGlobalsThreadModel::Decrement(&m_nLockCnt);
+		return ComMultiThreadModel::Decrement(&m_nLockCnt);
 	}
 
 	virtual LONG GetLockCount() throw()
@@ -177,7 +174,6 @@ public:
 		return hr;
 	}
 
-#ifdef _ATL_USE_WINAPI_FAMILY_DESKTOP_APP
 	virtual HRESULT AddCommonRGSReplacements(_Inout_ IRegistrarBase* /*pRegistrar*/) throw() = 0;
 
 	// Resource-based Registration
@@ -243,23 +239,23 @@ public:
 
 	// Cannot use TBYTE because it is not defined when <tchar.h> is #included
 	#ifdef  UNICODE
-	#define _ATL_TBYTE wchar_t
+	#define _TBYTE wchar_t
 	#else
-	#define _ATL_TBYTE unsigned char
+	#define _TBYTE unsigned char
 	#endif
 
 		static int WordCmpI(
 			_In_z_ LPCTSTR psz1,
 			_In_z_ LPCTSTR psz2) throw()
 		{
-			TCHAR c1 = (TCHAR)(SIZE_T)CharUpper((LPTSTR)(_ATL_TBYTE)*psz1);
-			TCHAR c2 = (TCHAR)(SIZE_T)CharUpper((LPTSTR)(_ATL_TBYTE)*psz2);
+			TCHAR c1 = (TCHAR)(SIZE_T)CharUpper((LPTSTR)(_TBYTE)*psz1);
+			TCHAR c2 = (TCHAR)(SIZE_T)CharUpper((LPTSTR)(_TBYTE)*psz2);
 			while (c1 != _T('\0') && c1 == c2 && c1 != ' ' && c1 != '\t')
 			{
 				psz1 = CharNext(psz1);
 				psz2 = CharNext(psz2);
-				c1 = (TCHAR)(SIZE_T)CharUpper((LPTSTR)(_ATL_TBYTE)*psz1);
-				c2 = (TCHAR)(SIZE_T)CharUpper((LPTSTR)(_ATL_TBYTE)*psz2);
+				c1 = (TCHAR)(SIZE_T)CharUpper((LPTSTR)(_TBYTE)*psz1);
+				c2 = (TCHAR)(SIZE_T)CharUpper((LPTSTR)(_TBYTE)*psz2);
 			}
 			if ((c1 == _T('\0') || c1 == ' ' || c1 == '\t') && (c2 == _T('\0') || c2 == ' ' || c2 == '\t'))
 				return 0;
@@ -267,9 +263,8 @@ public:
 			return (c1 < c2) ? -1 : 1;
 		}
 
-	#undef _ATL_TBYTE
+	#undef _TBYTE
 
-	#endif // _ATL_USE_WINAPI_FAMILY_DESKTOP_APP
 };
 
 __declspec(selectany) GUID WinRTModule::m_libid = { 0x0, 0x0, 0x0, {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0} };

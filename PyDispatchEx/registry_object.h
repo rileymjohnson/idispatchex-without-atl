@@ -1,9 +1,8 @@
 #pragma once
 #include "pch.h"
+#include "synchronization.h"
 
-#include <unordered_map>
-
-using namespace ATL;
+#include <map>
 
 class RegObject :
 	public IRegistrarBase
@@ -47,9 +46,12 @@ protected:
 		_In_z_ LPCTSTR pszType,
 		_In_ BOOL bRegister);
 
-	CExpansionVector m_RepMap;
-	std::unordered_map<LPCOLESTR, LPCOLESTR> m_RepMap2;
-	CComObjectThreadModel::AutoDeleteCriticalSection m_csMap;
+	std::map<std::wstring, std::wstring, decltype([](const std::wstring& s1, const std::wstring& s2) {
+		return std::ranges::lexicographical_compare(s1, s2, [](const wchar_t& c1, const wchar_t& c2) {
+			 return std::tolower(c1) < std::tolower(c2);
+		 });
+	})> m_RepMap;
+	ComFakeCriticalSection m_csMap;
 };
 
 

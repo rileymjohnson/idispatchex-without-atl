@@ -3,7 +3,7 @@
 
 BOOL RegParser::EndOfVar()
 {
-	return chQuote == *m_pchCur && chQuote != *CharNext(m_pchCur);
+	return L'\'' == *m_pchCur && L'\'' != *CharNext(m_pchCur);
 }
 
 RegParser::CParseBuffer::CParseBuffer(int nInitial)
@@ -157,13 +157,13 @@ HRESULT RegParser::NextToken(LPTSTR szToken)
 
 	LPCTSTR szOrig = szToken;
 	// handle quoted value / key
-	if (chQuote == *m_pchCur)
+	if (L'\'' == *m_pchCur)
 	{
 		m_pchCur = CharNext(m_pchCur);
 
 		while (L'\0' != *m_pchCur && !EndOfVar())
 		{
-			if (chQuote == *m_pchCur) // If it is a quote that means we must skip it
+			if (L'\'' == *m_pchCur) // If it is a quote that means we must skip it
 				m_pchCur = CharNext(m_pchCur);
 
 			LPTSTR pchPrev = m_pchCur;
@@ -238,7 +238,6 @@ HRESULT RegParser::AddValue(RegKey& rkParent, LPCTSTR szValueName, LPTSTR szToke
 
 	if (ERROR_SUCCESS != lRes)
 	{
-		nIDRes = E_ATL_VALUE_SET_FAILED;
 		return winrt::impl::hresult_from_win32(lRes);
 	}
 
@@ -298,7 +297,7 @@ HRESULT RegParser::SkipAssignment(LPTSTR szToken)
 	HRESULT hr;
 	TCHAR szValue[MAX_VALUE];
 
-	if (*szToken == chEquals)
+	if (*szToken == L'=')
 	{
 		if (FAILED(hr = NextToken(szToken)))
 			return hr;
@@ -373,7 +372,7 @@ HRESULT RegParser::PreProcessBuffer(LPTSTR lpszReg, LPTSTR* ppszReg)
 				}
 			}
 
-			if (chQuote == *m_pchCur)
+			if (L'\'' == *m_pchCur)
 			{
 				if (false == bInsideQuotes)
 				{
@@ -446,7 +445,7 @@ HRESULT RegParser::PreProcessBuffer(LPTSTR lpszReg, LPTSTR* ppszReg)
 				}
 				int nLength = int(lpszNext - m_pchCur);
 				TCHAR buf[32];
-				Checked::tcsncpy_s(buf, _countof(buf), m_pchCur, nLength);
+				wcsncpy_s(buf, _countof(buf), m_pchCur, nLength);
 				LPCOLESTR lpszVar = m_pRegObj->StrFromMap(buf);
 				if (lpszVar == nullptr)
 				{
@@ -508,7 +507,7 @@ HRESULT RegParser::RegisterBuffer(LPTSTR szBuffer, BOOL bRegister)
 		if (FAILED(hr = NextToken(szToken)))
 			break;
 
-		if (chLeftBracket != *szToken)
+		if (L'{' != *szToken)
 		{
 			hr = DISP_E_EXCEPTION;
 			break;
@@ -548,12 +547,12 @@ HRESULT RegParser::RegisterSubkeys(LPTSTR szToken, HKEY hkParent, BOOL bRegister
 	if (FAILED(hr = NextToken(szToken)))
 		return hr;
 
-	while (*szToken != chRightBracket) // Continue till we see a }
+	while (*szToken != L'}') // Continue till we see a }
 	{
 		bDelete = TRUE;
-		BOOL bTokenDelete = !lstrcmpi(szToken, szDelete);
+		BOOL bTokenDelete = !lstrcmpi(szToken, L"Delete");
 
-		if (!lstrcmpi(szToken, szForceRemove) || bTokenDelete)
+		if (!lstrcmpi(szToken, L"ForceRemove") || bTokenDelete)
 		{
 			if (FAILED(hr = NextToken(szToken)))
 				break;
@@ -562,7 +561,7 @@ HRESULT RegParser::RegisterSubkeys(LPTSTR szToken, HKEY hkParent, BOOL bRegister
 			{
 				RegKey rkForceRemove;
 
-				if (StrChr(szToken, chDirSep) != nullptr)
+				if (StrChr(szToken, L'\\') != nullptr)
 					return DISP_E_EXCEPTION;
 
 				if (CanForceRemoveKey(szToken))
@@ -583,14 +582,14 @@ HRESULT RegParser::RegisterSubkeys(LPTSTR szToken, HKEY hkParent, BOOL bRegister
 			}
 		}
 
-		if (!lstrcmpi(szToken, szNoRemove))
+		if (!lstrcmpi(szToken, L"NoRemove"))
 		{
 			bDelete = FALSE;    // set even for register
 			if (FAILED(hr = NextToken(szToken)))
 				break;
 		}
 
-		if (!lstrcmpi(szToken, szValToken)) // need to add a value to hkParent
+		if (!lstrcmpi(szToken, L"Val")) // need to add a value to hkParent
 		{
 			TCHAR  szValueName[MAX_VALUE];
 
@@ -599,7 +598,7 @@ HRESULT RegParser::RegisterSubkeys(LPTSTR szToken, HKEY hkParent, BOOL bRegister
 			if (FAILED(hr = NextToken(szToken)))
 				break;
 
-			if (*szToken != chEquals)
+			if (*szToken != L'=')
 				return DISP_E_EXCEPTION;
 
 			if (bRegister)
@@ -644,7 +643,7 @@ HRESULT RegParser::RegisterSubkeys(LPTSTR szToken, HKEY hkParent, BOOL bRegister
 			}
 		}
 
-		if (StrChr(szToken, chDirSep) != nullptr)
+		if (StrChr(szToken, L'\\') != nullptr)
 			return DISP_E_EXCEPTION;
 
 		if (bRegister)
@@ -667,7 +666,7 @@ HRESULT RegParser::RegisterSubkeys(LPTSTR szToken, HKEY hkParent, BOOL bRegister
 				break;
 
 
-			if (*szToken == chEquals)
+			if (*szToken == L'=')
 			{
 				if (FAILED(hr = AddValue(keyCur, NULL, szToken))) // NULL == default
 					break;
@@ -689,14 +688,14 @@ HRESULT RegParser::RegisterSubkeys(LPTSTR szToken, HKEY hkParent, BOOL bRegister
 				bRecover = true;
 
 			// Remember Subkey
-			Checked::tcsncpy_s(szKey, _countof(szKey), szToken, _TRUNCATE);
+			wcsncpy_s(szKey, _countof(szKey), szToken, _TRUNCATE);
 
 			if (FAILED(hr = NextToken(szToken)))
 				break;
 			if (FAILED(hr = SkipAssignment(szToken)))
 				break;
 
-			if (*szToken == chLeftBracket && std::wcslen(szToken) == 1)
+			if (*szToken == L'{' && std::wcslen(szToken) == 1)
 			{
 				hr = RegisterSubkeys(szToken, keyCur.m_hKey, bRegister, bRecover);
 				// In recover mode ignore error
@@ -759,7 +758,7 @@ HRESULT RegParser::RegisterSubkeys(LPTSTR szToken, HKEY hkParent, BOOL bRegister
 
 		if (bRegister)
 		{
-			if (*szToken == chLeftBracket && std::wcslen(szToken) == 1)
+			if (*szToken == L'{' && std::wcslen(szToken) == 1)
 			{
 				if (FAILED(hr = RegisterSubkeys(szToken, keyCur.m_hKey, bRegister, FALSE)))
 					break;

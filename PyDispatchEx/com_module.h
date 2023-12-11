@@ -3,6 +3,7 @@
 #include "pch.h"
 #include "synchronization.h"
 #include "base_module.h"
+#include "registry_key.h"
 
 struct COM_MODULE
 {
@@ -18,7 +19,7 @@ inline __declspec(nothrow) HRESULT __stdcall RegisterClassCategoriesHelper(
 	_In_opt_ const struct CATMAP_ENTRY* pCatMap,
 	_In_ BOOL bRegister)
 {
-	CComPtr< ICatRegister > pCatRegister;
+	winrt::com_ptr< ICatRegister > pCatRegister;
 	HRESULT hResult;
 	const struct CATMAP_ENTRY* pEntry;
 	CATID catid;
@@ -96,17 +97,17 @@ inline __declspec(nothrow) HRESULT __stdcall RegisterClassCategoriesHelper(
 		{
 			TCHAR szKey[128];
 #ifdef UNICODE
-			Checked::wcscpy_s(szKey, _countof(szKey), _T("CLSID\\"));
-			Checked::wcscat_s(szKey, _countof(szKey), pszGUID);
-			Checked::wcscat_s(szKey, _countof(szKey), _T("\\Required Categories"));
+			::wcscpy_s(szKey, _countof(szKey), _T("CLSID\\"));
+			::wcscat_s(szKey, _countof(szKey), pszGUID);
+			::wcscat_s(szKey, _countof(szKey), _T("\\Required Categories"));
 #else
 			Checked::strcpy_s(szKey, _countof(szKey), _T("CLSID\\"));
 			Checked::strcat_s(szKey, _countof(szKey), pszGUID);
 			Checked::strcat_s(szKey, _countof(szKey), _T("\\Required Categories"));
 #endif
 
-			CRegKey root(HKEY_CLASSES_ROOT);
-			CRegKey key;
+			RegKey root(HKEY_CLASSES_ROOT);
+			RegKey key;
 			DWORD cbSubKeys = 0;
 
 			LRESULT lRes = key.Open(root, szKey, KEY_READ);
@@ -121,9 +122,9 @@ inline __declspec(nothrow) HRESULT __stdcall RegisterClassCategoriesHelper(
 			}
 
 #ifdef UNICODE
-			Checked::wcscpy_s(szKey, _countof(szKey), _T("CLSID\\"));
-			Checked::wcscat_s(szKey, _countof(szKey), pszGUID);
-			Checked::wcscat_s(szKey, _countof(szKey), _T("\\Implemented Categories"));
+			::wcscpy_s(szKey, _countof(szKey), _T("CLSID\\"));
+			::wcscat_s(szKey, _countof(szKey), pszGUID);
+			::wcscat_s(szKey, _countof(szKey), _T("\\Implemented Categories"));
 #else
 			Checked::strcpy_s(szKey, _countof(szKey), _T("CLSID\\"));
 			Checked::strcat_s(szKey, _countof(szKey), pszGUID);
@@ -148,9 +149,9 @@ inline __declspec(nothrow) HRESULT __stdcall WinRTUnRegisterTypeLib(
 	_In_ HINSTANCE hInstTypeLib,
 	_In_opt_z_ LPCOLESTR lpszIndex)
 {
-	CComBSTR bstrPath;
-	CComPtr<ITypeLib> pTypeLib;
-	HRESULT hr = AtlLoadTypeLib(hInstTypeLib, lpszIndex, &bstrPath, &pTypeLib);
+	ATL::CComBSTR bstrPath;
+	winrt::com_ptr<ITypeLib> pTypeLib;
+	HRESULT hr = ATL::AtlLoadTypeLib(hInstTypeLib, lpszIndex, &bstrPath, pTypeLib.put());
 	if (SUCCEEDED(hr))
 	{
 		TLIBATTR* ptla;
@@ -193,22 +194,22 @@ inline __declspec(nothrow) HRESULT __stdcall WinRTRegisterTypeLib(
 	_In_ HINSTANCE hInstTypeLib,
 	_In_opt_z_ LPCOLESTR lpszIndex)
 {
-	CComBSTR bstrPath;
-	CComPtr<ITypeLib> pTypeLib;
-	HRESULT hr = AtlLoadTypeLib(hInstTypeLib, lpszIndex, &bstrPath, &pTypeLib);
+	ATL::CComBSTR bstrPath;
+	winrt::com_ptr<ITypeLib> pTypeLib;
+	HRESULT hr = ATL::AtlLoadTypeLib(hInstTypeLib, lpszIndex, &bstrPath, pTypeLib.put());
 	if (SUCCEEDED(hr))
 	{
 		LPCOLESTR szDir = NULL;
 		OLECHAR szDirBuffer[MAX_PATH];
-		CComBSTR bstrHelpFile;
+		ATL::CComBSTR bstrHelpFile;
 		hr = pTypeLib->GetDocumentation(-1, NULL, NULL, NULL, &bstrHelpFile);
 		if (SUCCEEDED(hr) && bstrHelpFile != NULL)
 		{
-			Checked::wcsncpy_s(szDirBuffer, MAX_PATH, bstrHelpFile.m_str, bstrHelpFile.Length());
+			::wcsncpy_s(szDirBuffer, MAX_PATH, bstrHelpFile.m_str, bstrHelpFile.Length());
 			szDirBuffer[MAX_PATH - 1] = 0;
 
 			// truncate at the directory level
-			szDirBuffer[AtlGetDirLen(szDirBuffer)] = 0;
+			szDirBuffer[ATL::AtlGetDirLen(szDirBuffer)] = 0;
 
 			szDir = &szDirBuffer[0];
 		}
@@ -237,7 +238,7 @@ inline __declspec(nothrow) HRESULT __stdcall WinRTRegisterTypeLib(
 			pfnRegisterTypeLib = (PFNREGISTERTYPELIB)&RegisterTypeLib;
 		}
 
-		hr = pfnRegisterTypeLib(pTypeLib, bstrPath, szDir);
+		hr = pfnRegisterTypeLib(pTypeLib.get(), bstrPath, szDir);
 
 	}
 	return hr;
@@ -352,7 +353,6 @@ public:
 		Term();
 	}
 
-	// Called from ~ComModule or from ~CAtlExeModule.
 	void Term()
 	{
 		if (cbSize == 0)
@@ -380,8 +380,6 @@ public:
 		// having the correct value
 		cbSize = 0;
 	}
-
-#ifdef _ATL_USE_WINAPI_FAMILY_DESKTOP_APP
 
 	// Registry support (helpers)
 	HRESULT RegisterTypeLib()
@@ -420,8 +418,6 @@ public:
 	{
 		return ComModuleUnregisterServer(this, bRegTypeLib, pCLSID);
 	}
-
-#endif // _ATL_USE_WINAPI_FAMILY_DESKTOP_APP
 
 	// Implementation
 
@@ -476,7 +472,7 @@ inline __declspec(nothrow) HRESULT __stdcall ComModuleGetClassObject(
 
 				if (pCache->pCF == NULL)
 				{
-					CComCritSecLock lock(pComModule->m_csObjMap, false);
+					ComCritSecLock lock(pComModule->m_csObjMap, false);
 					hr = lock.Lock();
 					if (FAILED(hr))
 					{

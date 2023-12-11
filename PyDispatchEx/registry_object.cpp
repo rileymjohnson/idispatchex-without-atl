@@ -39,10 +39,10 @@ HRESULT STDMETHODCALLTYPE RegObject::AddReplacement(LPCOLESTR lpszKey, LPCOLESTR
 		return E_INVALIDARG;
 
 	m_csMap.Lock();
-	BOOL bRet = m_RepMap.Add(lpszKey, lpszItem);
+	m_RepMap[lpszKey] = lpszItem;
 	m_csMap.Unlock();
 
-	return bRet ? S_OK : E_OUTOFMEMORY;
+	return S_OK;
 }
 
 HRESULT RegObject::RegisterFromResource(
@@ -108,16 +108,17 @@ HRESULT STDMETHODCALLTYPE RegObject::ResourceUnregister(
 HRESULT RegObject::ClearReplacements()
 {
 	m_csMap.Lock();
-	HRESULT hr = m_RepMap.ClearReplacements();
+	m_RepMap.clear();
 	m_csMap.Unlock();
-	return hr;
+
+	return S_OK;
 }
 
 
 LPCOLESTR RegObject::StrFromMap(_In_z_ LPTSTR lpszKey)
 {
 	m_csMap.Lock();
-	const LPCOLESTR lpsz = m_RepMap.Lookup(lpszKey);
+	const LPCOLESTR lpsz = m_RepMap.at(lpszKey).c_str();
 	m_csMap.Unlock();
 
 	return lpsz;
